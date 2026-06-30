@@ -12,7 +12,7 @@ function meView(req) {
   if (!req.user) return { authenticated: false };
   const out = {
     authenticated: true,
-    user: { id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role },
+    user: { id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, owner: !!req.user.owner },
   };
   if (req.user.role === 'merchant' && req.merchant) {
     out.merchant = merchantsSvc.publicMerchant(req.merchant);

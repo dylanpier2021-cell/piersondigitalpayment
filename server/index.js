@@ -30,6 +30,7 @@ app.use(auth.attachUser);
 app.use('/auth', require('./routes/auth'));
 app.use('/api/merchant', require('./routes/merchant'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/owner', require('./routes/owner'));
 app.use('/api/public', require('./routes/public'));
 app.use('/v1', require('./routes/api'));
 

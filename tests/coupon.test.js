@@ -7,14 +7,14 @@ async function run() {
   const admin = makeJar();
   await login(admin, 'owner@transfado.com', 'transfado123');
 
-  // ---- FREE coupon exists and waives fees for the seeded Gloss Spot ----
+  // ---- FREE coupon exists and waives fees for a seeded client ----
   const merchants = (await admin.fetch('/api/admin/merchants')).data.data;
-  const gloss = merchants.find((m) => m.businessName === 'The Gloss Spot');
-  c.ok(gloss && gloss.couponLabel && /waiv/i.test(gloss.couponLabel), 'FREE attached to a seeded client');
+  const freeMerchant = merchants.find((m) => m.couponLabel && /waiv/i.test(m.couponLabel));
+  c.ok(!!freeMerchant, 'FREE attached to a seeded client');
 
   // login as the FREE merchant and charge -> fee 0, net = amount, margin 0
   const free = makeJar();
-  await login(free, 'gloss@example.com', 'demo1234');
+  await login(free, 'boochies@example.com', 'demo1234');
   let r = await free.fetch('/api/merchant/charges', { method: 'POST', body: { amount: 10000, card: APPROVE } });
   const f = r.data.charge.fees;
   c.ok(f.merchantFee === 0 && f.merchantNet === 10000 && f.piersonMargin === 0, 'FREE coupon: fee 0, net 100%, margin 0');

@@ -2,7 +2,8 @@
 
 const bcrypt = require('bcryptjs');
 const db = require('./db');
-const { prefixedId, now } = require('./util');
+const config = require('./config');
+const { now, sign, safeEqual } = require('./util');
 
 const SESSION_COOKIE = 'pp_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14 days
@@ -24,31 +25,31 @@ function findUserByEmail(email) {
   return db.findOne('users', (u) => u.email.toLowerCase() === target);
 }
 
+/**
+ * Stateless sessions: the cookie is `userId.expiresAt.HMAC(userId.expiresAt)`
+ * signed with SESSION_SECRET. No server-side store, so a session is valid on
+ * any instance — essential on serverless (Vercel), where each lambda has its
+ * own ephemeral /tmp and a file-stored session would not survive cold starts.
+ */
 function createSession(userId) {
-  const token = prefixedId('sess', 28);
-  const ts = now();
-  db.insert('sessions', {
-    id: token,
-    userId,
-    createdAt: ts,
-    expiresAt: ts + SESSION_TTL_MS,
-  });
-  return token;
+  const expiresAt = now() + SESSION_TTL_MS;
+  const payload = `${userId}.${expiresAt}`;
+  return `${payload}.${sign(payload, config.SESSION_SECRET)}`;
 }
 
-function destroySession(token) {
-  if (token) db.remove('sessions', token);
-}
+// Stateless — nothing to destroy server-side; logout clears the cookie.
+function destroySession() {}
 
 function getSessionUser(token) {
-  if (!token) return null;
-  const session = db.findById('sessions', token);
-  if (!session) return null;
-  if (session.expiresAt < now()) {
-    db.remove('sessions', token);
-    return null;
-  }
-  return db.findById('users', session.userId);
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [userId, expiresStr, mac] = parts;
+  const payload = `${userId}.${expiresStr}`;
+  if (!safeEqual(mac, sign(payload, config.SESSION_SECRET))) return null;
+  const expiresAt = Number(expiresStr);
+  if (!Number.isFinite(expiresAt) || expiresAt < now()) return null;
+  return db.findById('users', userId);
 }
 
 /**
@@ -91,6 +92,14 @@ function requireAuth(req, res, next) {
 function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: { message: 'Admin access required.' } });
+  }
+  next();
+}
+
+// Platform owner / super-admin only (the Earnings + platform payout screens).
+function requireOwner(req, res, next) {
+  if (!req.user || !req.user.owner) {
+    return res.status(403).json({ error: { message: 'Owner access required.' } });
   }
   next();
 }
@@ -159,6 +168,7 @@ module.exports = {
   clearSessionCookie,
   requireAuth,
   requireAdmin,
+  requireOwner,
   requireMerchant,
   requireApiKey,
 };

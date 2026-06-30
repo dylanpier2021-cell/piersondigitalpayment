@@ -92,9 +92,19 @@ function computeFees(amountCents, rates, coupon) {
 
 /**
  * Convenience: resolve + compute in one call. Pass a `coupon` to apply a discount.
+ * Owner-owned businesses process at a permanent true $0 (fee/cost/margin all 0),
+ * via the owner flag — not an expiring coupon — so the owner keeps 100%.
  */
 function quote(amountCents, merchant, feePlans, coupon) {
   const resolved = resolveRates(merchant, feePlans);
+  if (merchant && merchant.ownedByOwner) {
+    const amount = Math.max(0, Math.round(amountCents));
+    return {
+      amount, merchantFee: 0, processorCost: 0, piersonMargin: 0, merchantNet: amount,
+      couponApplied: null, couponWaived: false, ownerWaived: true,
+      rates: resolved.rates, pricing: resolved,
+    };
+  }
   const breakdown = computeFees(amountCents, resolved.rates, coupon);
   return { ...breakdown, rates: resolved.rates, pricing: resolved };
 }

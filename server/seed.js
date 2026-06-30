@@ -92,6 +92,7 @@ function buildMerchant(def, ts) {
     status: def.status || 'active',
     payoutMethod: def.payoutMethod || null,
     appliedCoupon: def.appliedCoupon || null,
+    ownedByOwner: def.ownedByOwner || false,
     publishableKey: keys.publishableKey,
     secretKey: keys.secretKey,
     createdAt: ts,
@@ -136,7 +137,7 @@ function seed() {
   settings.platformName = 'Transfado';
   db.save();
 
-  // ---- Admin (platform owner) ----
+  // ---- Demo admin (a regular admin login for previews) ----
   db.insert('users', {
     id: prefixedId('usr', 18),
     object: 'user',
@@ -145,6 +146,19 @@ function seed() {
     name: 'Transfado',
     email: config.ADMIN_EMAIL.toLowerCase(),
     passwordHash: auth.hashPassword(config.ADMIN_PASSWORD),
+    createdAt: now(),
+  });
+
+  // ---- Platform OWNER / super-admin (always seeded; sees everything, $0 fees) ----
+  db.insert('users', {
+    id: prefixedId('usr', 18),
+    object: 'user',
+    role: 'admin',
+    owner: true,
+    merchantId: null,
+    name: 'Owner',
+    email: config.OWNER_EMAIL,
+    passwordHash: auth.hashPassword(config.OWNER_PASSWORD),
     createdAt: now(),
   });
 
@@ -159,14 +173,23 @@ function seed() {
     db.insert('coupons', { id: prefixedId('cpn', 14), object: 'coupon', code: c.code, type: c.type, value: c.value, scope: 'platform', merchantId: null, maxRedemptions: c.maxRedemptions, redemptions: c.redemptions, expiresAt: null, active: true, createdAt: ts, createdIso: iso(ts) });
   });
 
-  // ---- Sample clients (each with a demo payout method) ----
+  // Production deploys (SEED_DEMO=false) stop here: only the owner + admin + fee
+  // plans + coupons exist, so real signups get clean, empty accounts.
+  if (!config.SEED_DEMO) {
+    db.save();
+    return summary();
+  }
+
+  // ---- Sample clients (demo only; each with a demo payout method) ----
   const bank = (name, last4, holder) => ({ type: 'bank', bankName: name, last4, routing: '110000000', holderName: holder, label: `${name} ••${last4}` });
   const debit = (brand, last4, holder) => ({ type: 'card', brand, last4, expMonth: 8, expYear: 2031, holderName: holder, label: `${brand[0].toUpperCase() + brand.slice(1)} debit ••${last4}` });
   const merchantDefs = [
-    { businessName: "Boochie's Slots & Video Poker", email: 'boochies@example.com', password: 'demo1234', contactName: 'Boochie', website: 'boochiesplace.com', feePlanId: plans[1].id, payoutMethod: debit('visa', '4242', 'Boochie') },
+    // FREE coupon demo lives on this client.
+    { businessName: "Boochie's Slots & Video Poker", email: 'boochies@example.com', password: 'demo1234', contactName: 'Boochie', website: 'boochiesplace.com', feePlanId: plans[1].id, appliedCoupon: 'FREE', payoutMethod: debit('visa', '4242', 'Boochie') },
     { businessName: 'KEI Events', email: 'aricka@example.com', password: 'demo1234', contactName: 'Aricka Dean', website: 'kei-events.com', feePlanId: plans[0].id, feeOverride: { pricePct: 270, priceFixed: 15 }, payoutMethod: bank('Chase', '8842', 'Aricka Dean') },
     { businessName: "Jermaine's Home Services", email: 'jermaine@example.com', password: 'demo1234', contactName: 'Jermaine', feePlanId: plans[0].id, payoutMethod: bank('Bank of America', '5511', 'Jermaine') },
-    { businessName: 'The Gloss Spot', email: 'gloss@example.com', password: 'demo1234', contactName: 'Front Desk', feePlanId: plans[0].id, appliedCoupon: 'FREE', payoutMethod: debit('mastercard', '4444', 'The Gloss Spot') },
+    // One of the owner's OWN businesses — processes at a permanent $0 fee (owner keeps 100%).
+    { businessName: 'The Gloss Spot', email: 'gloss@example.com', password: 'demo1234', contactName: 'Front Desk', feePlanId: plans[0].id, ownedByOwner: true, payoutMethod: debit('mastercard', '4444', 'The Gloss Spot') },
     { businessName: 'MAD Landscaping', email: 'mad@example.com', password: 'demo1234', contactName: 'Owner', feePlanId: plans[1].id, payoutMethod: bank('Wells Fargo', '2093', 'MAD Landscaping') },
   ];
 
@@ -323,6 +346,17 @@ function seed() {
     db.update('merchants', merchant.id, { balance });
   }
 
+  // ---- Owner demo earnings: a saved payout method + a couple of past withdrawals.
+  // Withdraw ~30% of the profit actually earned so the available balance stays positive.
+  db.getData().meta.settings.ownerPayoutMethod = bank('Chase', '7781', 'Owner');
+  const earnedMargin = db.find('transactions', (t) => t.status !== 'failed').reduce((s, t) => s + (t.fees ? t.fees.piersonMargin : 0), 0);
+  [0.18, 0.12].forEach((frac) => {
+    const amt = Math.round(earnedMargin * frac);
+    if (amt <= 0) return;
+    const when = now() - randInt(8, 30) * DAY;
+    db.insert('ownerPayouts', { id: prefixedId('opo', 16), object: 'owner_payout', amount: amt, fromProfit: amt, fromBusinesses: 0, currency: 'usd', status: 'paid', method: 'standard', destination: 'Chase ••7781', createdAt: when, createdIso: iso(when) });
+  });
+
   db.save();
   return summary();
 }
@@ -363,7 +397,8 @@ if (require.main === module) {
   }
   const result = seed();
   console.log('Seeded Transfado sandbox:', JSON.stringify(result, null, 2));
-  console.log(`\nAdmin login:  ${config.ADMIN_EMAIL} / ${config.ADMIN_PASSWORD}`);
+  console.log(`\nOwner login:  ${config.OWNER_EMAIL} / ${config.OWNER_PASSWORD}  (Earnings + $0 fees + sees everything)`);
+  console.log(`Admin login:  ${config.ADMIN_EMAIL} / ${config.ADMIN_PASSWORD}`);
   console.log('Client login: boochies@example.com / demo1234 (and 4 more)');
   console.log('Coupon: FREE waives all fees · LAUNCH50 = 50% off · SAVE10 = $0.10 off');
 }

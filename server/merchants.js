@@ -66,6 +66,7 @@ function createMerchant({ businessName, email, password, contactName, feePlanId,
     status: 'active', // active | suspended
     payoutMethod: null, // where payouts go (debit card or bank account)
     appliedCoupon: null, // attached coupon code that discounts/waives fees
+    ownedByOwner: false, // owner's own business — processes at a permanent $0 fee
     publishableKey: keys.publishableKey,
     secretKey: keys.secretKey,
     createdAt: ts,
@@ -118,6 +119,7 @@ function publicMerchant(m) {
     currency: m.currency,
     payoutMethod: m.payoutMethod || null,
     appliedCoupon: m.appliedCoupon || null,
+    ownedByOwner: !!m.ownedByOwner,
     createdAt: m.createdAt,
   };
 }

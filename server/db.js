@@ -33,6 +33,7 @@ const EMPTY = {
       platformName: 'Transfado',
       defaultFeePlanId: null,
       payoutHoldDays: 2,
+      ownerPayoutMethod: null, // where Transfado's own profit pays out (owner's bank/card)
     },
   },
   users: [],
@@ -46,6 +47,7 @@ const EMPTY = {
   webhooks: [],
   webhookDeliveries: [],
   notifications: [],
+  ownerPayouts: [],
   sessions: [],
   events: [],
 };

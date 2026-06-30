@@ -33,7 +33,7 @@
     $$('.side-link[data-page]').forEach((a) => a.classList.toggle('active', a.dataset.page === name));
     $$('.page').forEach((p) => p.classList.remove('active'));
     $('#page-' + name).classList.add('active');
-    $('#page-title').textContent = t(TITLE_KEY[name]);
+    $('#page-title').textContent = TITLE_KEY[name] ? t(TITLE_KEY[name]) : (name.charAt(0).toUpperCase() + name.slice(1));
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     RENDER[name]();
   }
@@ -392,11 +392,149 @@
     ], [el('button', { class: 'btn btn-ghost', text: t('common.cancel'), onclick: closeModal }), save]));
   }
 
-  const RENDER = { overview: renderOverview, clients: renderClients, plans: renderPlans, coupons: renderCoupons, transactions: renderTransactions, settings: renderSettings };
+  // ============================ OWNER EARNINGS ============================
+  async function renderEarnings() {
+    const host = $('#page-earnings');
+    host.innerHTML = '<div class="loading-block"><span class="spinner"></span></div>';
+    const e = await api('/api/owner/earnings');
+    host.innerHTML = '';
+
+    host.appendChild(el('div', { class: 'stat-grid stagger' }, [
+      tile('Available to withdraw', money(e.combined), 'green', 'Profit + your businesses', e.combined),
+      tile('Profit from others', money(e.profitAvailable), 'gold', 'Earned ' + money(e.profitEarned) + ' all-time', e.profitAvailable),
+      tile('My businesses', money(e.ownAvailable), '', e.ownBusinesses.length + ' account(s) you own', e.ownAvailable),
+      tile('Withdrawn', money(e.profitWithdrawn), '', 'Profit paid out', e.profitWithdrawn),
+    ]));
+
+    // Payout card + method
+    const hasMethod = !!e.payoutMethod;
+    const payBtn = el('button', { class: 'btn btn-green btn-block btn-lg', text: hasMethod ? 'Pay out to ' + (e.payoutMethod.type === 'card' ? 'card' : 'bank') : 'Add a payout method first', disabled: hasMethod ? null : 'disabled' });
+    payBtn.addEventListener('click', () => ownerPayoutModal(e));
+    const payoutCard = el('div', { class: 'card' }, [
+      el('div', { class: 'stat-label', text: 'Combined available' }),
+      el('div', { class: 'stat-value green', style: 'font-size:38px', text: money(e.combined) }),
+      el('p', { class: 'help mb16', text: 'Everything Transfado earned for you, ready to withdraw.' }),
+      payBtn,
+      el('div', { class: 'row-between mt24 mb8' }, [el('div', { class: 'panel-title', style: 'margin:0', text: 'Payout method' }), el('button', { class: 'btn btn-ghost btn-sm', text: hasMethod ? 'Change' : 'Add', onclick: () => ownerMethodModal() })]),
+      hasMethod
+        ? el('div', { class: 'fee-break' }, [el('div', { class: 'row-between' }, [el('span', { class: 'badge neutral plain', text: e.payoutMethod.type === 'card' ? 'Debit card' : 'Bank' }), el('strong', { text: e.payoutMethod.label })])])
+        : el('p', { class: 'help', text: 'Add your bank or debit card — this is where all of Transfado\'s profit pays out.' }),
+    ]);
+
+    const chartCard = el('div', { class: 'card' }, [
+      el('div', { class: 'panel-title', text: 'Profit earned — last 30 days' }),
+      el('div', { html: renderChart(e.series, { field: 'margin', color: 'var(--gold)', fill: 'gEarn' }) }),
+    ]);
+
+    host.appendChild(el('div', { class: 'grid-side mt24' }, [chartCard, payoutCard]));
+
+    // Per-merchant profit (other businesses)
+    const otherRows = e.perMerchant.map((r) => el('tr', {}, [
+      el('td', {}, [el('strong', { text: r.businessName })]),
+      el('td', { class: 'num', text: money(r.volume) }),
+      el('td', { class: 'num', html: '<span style="color:var(--gold)">' + money(r.margin) + '</span>' }),
+      el('td', { class: 'num small muted', text: r.count }),
+    ]));
+    const ownRows = e.ownBusinesses.map((r) => el('tr', {}, [
+      el('td', {}, [el('strong', { text: r.businessName }), el('span', { class: 'badge active plain', style: 'margin-left:6px', text: '$0 fees' })]),
+      el('td', { class: 'num', text: money(r.volume) }),
+      el('td', { class: 'num', html: '<span style="color:var(--positive-text)">' + money(r.balance) + '</span>' }),
+      el('td', { class: 'num small muted', text: r.count }),
+    ]));
+
+    host.appendChild(el('div', { class: 'grid-2 mt24' }, [
+      el('div', { class: 'card' }, [
+        el('h3', { class: 'mb16', text: 'Profit from other businesses' }),
+        e.perMerchant.length ? el('div', { class: 'table-wrap' }, [el('table', { class: 'data' }, [el('thead', {}, [el('tr', {}, ['Business', 'Volume', 'Your profit', 'Charges'].map((h, i) => el('th', { class: i ? 'num' : '', text: h })))]), el('tbody', {}, otherRows)])]) : emptyState('📈', 'No other businesses yet'),
+      ]),
+      el('div', { class: 'card' }, [
+        el('h3', { class: 'mb16', text: 'My own businesses' }),
+        e.ownBusinesses.length ? el('div', { class: 'table-wrap' }, [el('table', { class: 'data' }, [el('thead', {}, [el('tr', {}, ['Business', 'Volume', 'Balance', 'Charges'].map((h, i) => el('th', { class: i ? 'num' : '', text: h })))]), el('tbody', {}, ownRows)])]) : emptyState('🏢', 'You don\'t own any businesses yet'),
+      ]),
+    ]));
+
+    // Payout history + change password
+    const payoutRows = e.payouts.map((p) => el('tr', {}, [
+      el('td', {}, [el('strong', { text: money(p.amount) })]),
+      el('td', { class: 'small muted', text: 'profit ' + money(p.fromProfit) + (p.fromBusinesses ? ' + biz ' + money(p.fromBusinesses) : '') }),
+      el('td', {}, [statusBadge(p.status)]),
+      el('td', { class: 'small muted', text: p.destination }),
+      el('td', { class: 'small muted nowrap', text: fmtDate(p.createdAt) }),
+    ]));
+    host.appendChild(el('div', { class: 'grid-side mt24' }, [
+      el('div', { class: 'card' }, [
+        el('h3', { class: 'mb16', text: 'Withdrawal history' }),
+        e.payouts.length ? el('div', { class: 'table-wrap' }, [el('table', { class: 'data' }, [el('thead', {}, [el('tr', {}, ['Amount', 'Source', 'Status', 'Destination', 'Date'].map((h) => el('th', { text: h })))]), el('tbody', {}, payoutRows)])]) : emptyState('💸', 'No withdrawals yet'),
+      ]),
+      ownerSecurityCard(),
+    ]));
+  }
+
+  function ownerPayoutModal(e) {
+    const amount = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0.00' });
+    const err = el('div', { class: 'form-error' });
+    const btn = el('button', { class: 'btn btn-green', text: 'Withdraw' });
+    btn.addEventListener('click', async () => {
+      err.textContent = '';
+      const cents = centsFromDollars(amount.value);
+      if (!Number.isFinite(cents) || cents <= 0) { err.textContent = 'Enter an amount.'; return; }
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+      try { await api('/api/owner/payouts', { method: 'POST', body: { amount: cents } }); toast('Withdrew ' + money(cents) + ' to ' + e.payoutMethod.label + ' ✓', 'success'); closeModal(); renderEarnings(); }
+      catch (ex) { err.textContent = ex.message; btn.disabled = false; btn.textContent = 'Withdraw'; }
+    });
+    openModal(modalShell('Withdraw earnings', [
+      el('p', { class: 'muted mb16', text: 'Available: ' + money(e.combined) + ' → ' + (e.payoutMethod ? e.payoutMethod.label : 'no method') }),
+      el('label', { class: 'field' }, [el('span', { text: 'Amount (USD)' }), el('div', { class: 'input-group' }, [el('span', { class: 'input-prefix', text: '$' }), amount])]),
+      el('button', { class: 'btn btn-ghost btn-sm mb16', text: 'Withdraw all', onclick: () => { amount.value = (e.combined / 100).toFixed(2); } }),
+      err,
+    ], [el('button', { class: 'btn btn-ghost', text: t('common.cancel'), onclick: closeModal }), btn]));
+  }
+
+  function ownerMethodModal() {
+    let type = 'bank';
+    const seg = el('div', { class: 'segmented mb16' }, [el('button', { class: 'active', text: 'Bank account', onclick: () => sw('bank') }), el('button', { text: 'Debit card', onclick: () => sw('card') })]);
+    const bankName = el('input', { type: 'text', placeholder: 'e.g. Chase' });
+    const routing = el('input', { type: 'text', inputmode: 'numeric', placeholder: '9 digits', maxlength: '9' });
+    const account = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'Account number' });
+    const cardNum = el('input', { type: 'text', inputmode: 'numeric', placeholder: '4242 4242 4242 4242', maxlength: '23' });
+    const cardExp = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'MM / YY', maxlength: '7' });
+    cardNum.addEventListener('input', () => { let v = cardNum.value.replace(/\D/g, '').slice(0, 19); cardNum.value = v.replace(/(.{4})/g, '$1 ').trim(); });
+    cardExp.addEventListener('input', () => { let v = cardExp.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 3) v = v.slice(0, 2) + ' / ' + v.slice(2); cardExp.value = v; });
+    const name = el('input', { type: 'text', placeholder: 'Account holder name' });
+    const bankFields = el('div', {}, [el('label', { class: 'field' }, [el('span', { text: 'Bank name' }), bankName]), el('div', { class: 'field-row' }, [el('label', { class: 'field' }, [el('span', { text: 'Routing' }), routing]), el('label', { class: 'field' }, [el('span', { text: 'Account' }), account])])]);
+    const cardFields = el('div', { style: 'display:none' }, [el('label', { class: 'field' }, [el('span', { text: 'Debit card number' }), cardNum]), el('label', { class: 'field' }, [el('span', { text: 'Expiry' }), cardExp]), el('p', { class: 'help', html: 'Sandbox: <b>4242 4242 4242 4242</b>.' })]);
+    function sw(t2) { type = t2; seg.children[0].classList.toggle('active', t2 === 'bank'); seg.children[1].classList.toggle('active', t2 === 'card'); bankFields.style.display = t2 === 'bank' ? 'block' : 'none'; cardFields.style.display = t2 === 'card' ? 'block' : 'none'; }
+    const err = el('div', { class: 'form-error' });
+    const save = el('button', { class: 'btn btn-primary', text: 'Save payout method' });
+    save.addEventListener('click', async () => {
+      err.textContent = '';
+      const body = type === 'card'
+        ? { type: 'card', number: cardNum.value.replace(/\D/g, ''), exp_month: cardExp.value.replace(/\D/g, '').slice(0, 2), exp_year: cardExp.value.replace(/\D/g, '').slice(2), name: name.value }
+        : { type: 'bank', bankName: bankName.value, routingNumber: routing.value, accountNumber: account.value, name: name.value };
+      try { await api('/api/owner/payout-method', { method: 'PUT', body }); toast('Payout method saved ✓', 'success'); closeModal(); renderEarnings(); }
+      catch (ex) { err.textContent = ex.message; }
+    });
+    openModal(modalShell('Your payout method', [el('p', { class: 'muted mb16', text: 'Where Transfado\'s profit pays out.' }), seg, bankFields, cardFields, el('label', { class: 'field' }, [el('span', { text: 'Account holder name' }), name]), err], [el('button', { class: 'btn btn-ghost', text: t('common.cancel'), onclick: closeModal }), save]));
+  }
+
+  function ownerSecurityCard() {
+    const cur = el('input', { type: 'password', placeholder: 'Current password' });
+    const nw = el('input', { type: 'password', placeholder: 'New password (min 8 chars)' });
+    const err = el('div', { class: 'form-error' });
+    const save = el('button', { class: 'btn btn-primary', text: 'Change password' });
+    save.addEventListener('click', async () => {
+      err.textContent = '';
+      try { await api('/api/owner/password', { method: 'POST', body: { currentPassword: cur.value, newPassword: nw.value } }); toast('Password changed ✓', 'success'); cur.value = ''; nw.value = ''; }
+      catch (ex) { err.textContent = ex.message; }
+    });
+    return el('div', { class: 'card' }, [el('h3', { class: 'mb16', text: 'Owner security' }), el('label', { class: 'field' }, [el('span', { text: 'Current password' }), cur]), el('label', { class: 'field' }, [el('span', { text: 'New password' }), nw]), err, save]);
+  }
+
+  const RENDER = { earnings: renderEarnings, overview: renderOverview, clients: renderClients, plans: renderPlans, coupons: renderCoupons, transactions: renderTransactions, settings: renderSettings };
 
   function setupCommands() {
     setCommands([
-      ...PAGES.map((p) => ({ label: t(TITLE_KEY[p]), icon: '→', hint: '↵', run: () => setPage(p) })),
+      ...PAGES.map((p) => ({ label: TITLE_KEY[p] ? t(TITLE_KEY[p]) : p, icon: '→', hint: '↵', run: () => setPage(p) })),
       { label: 'Run billing', icon: '▶', run: runBilling },
       { label: 'Toggle theme', icon: '◐', run: () => window.PP.toggleTheme() },
       { label: t('dash.signout'), icon: '→', run: logout },
@@ -411,14 +549,26 @@
     $('#topctl').appendChild(topControls());
     window.PP.applyI18n(document);
     $('#side-account').innerHTML = '<strong style="color:var(--text)">' + escapeHtml(s.user.name) + '</strong><br>' + escapeHtml(s.user.email);
+
+    // The Earnings page is owner-only — inject its nav link + register it.
+    let startPage = 'overview';
+    if (s.user && s.user.owner) {
+      if (!PAGES.includes('earnings')) { PAGES.unshift('earnings'); TITLE_KEY.earnings = null; }
+      const nav = document.querySelector('.sidebar');
+      const link = el('a', { class: 'side-link', 'data-page': 'earnings' }, [el('span', { class: 'ico', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 17l5-5 4 3 7-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 4h5v5" stroke-linecap="round" stroke-linejoin="round"/></svg>' }), el('span', { text: 'Earnings' })]);
+      const pill = nav.querySelector('.pill-console') ? nav.querySelector('.pill-console').closest('div') : null;
+      if (pill && pill.nextSibling) nav.insertBefore(link, pill.nextSibling); else nav.insertBefore(link, nav.querySelector('.side-link'));
+      startPage = 'earnings';
+    }
+
     setupCommands();
     $$('.side-link[data-page]').forEach((a) => a.addEventListener('click', () => setPage(a.dataset.page)));
     $('#logout-btn').addEventListener('click', logout);
     $('#run-billing').addEventListener('click', runBilling);
     $('#cmdk-btn').addEventListener('click', openPalette);
     window.addEventListener('hashchange', () => setPage(location.hash.slice(1)));
-    document.addEventListener('localechange', () => { window.PP.applyI18n(document); setupCommands(); setPage(location.hash.slice(1) || 'overview'); });
-    setPage(location.hash.slice(1) || 'overview');
+    document.addEventListener('localechange', () => { window.PP.applyI18n(document); setupCommands(); setPage(location.hash.slice(1) || startPage); });
+    setPage(location.hash.slice(1) || startPage);
   }
   boot();
 })();

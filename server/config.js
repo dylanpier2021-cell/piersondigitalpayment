@@ -33,5 +33,15 @@ module.exports = {
   SESSION_SECRET: process.env.SESSION_SECRET || 'transfado-dev-secret',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'owner@transfado.com',
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'transfado123',
+  // Platform owner / super-admin (sees everything, $0 fees, withdraws platform profit).
+  OWNER_EMAIL: (process.env.OWNER_EMAIL || 'dylanpier2021@gmail.com').toLowerCase(),
+  OWNER_PASSWORD: process.env.OWNER_PASSWORD || 'owner1234',
+  // Seed rich demo merchants/transactions. Set SEED_DEMO=false for a clean
+  // production deploy (only the owner account is created; real signups stay empty).
+  SEED_DEMO: process.env.SEED_DEMO !== 'false',
+  // Transactional email (verify / reset / welcome). When unset, runs in sandbox:
+  // logs the email and returns the link instead of sending.
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'Transfado <no-reply@transfado.com>',
   PROCESSING_MODE: process.env.PROCESSING_MODE || 'sandbox',
 };

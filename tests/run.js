@@ -37,7 +37,7 @@ async function waitHealth() {
   const ok = await waitHealth();
   if (!ok) { console.error('Server did not become healthy'); srv.kill(); process.exit(1); }
 
-  const modules = ['./api.test', './coupon.test', './render.test'];
+  const modules = ['./api.test', './coupon.test', './owner.test', './render.test'];
   let totalPass = 0, totalFail = 0; const summaries = [];
   for (const mod of modules) {
     try {
