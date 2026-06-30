@@ -159,6 +159,7 @@
       <div class="bars" id="bars"></div>
       <div class="ip-note" id="ipNote"></div>
       <div class="ip-note" data-i18n="landing.compareNote">Rates as published mid-2026; verify before launch.</div>
+      <div class="ip-note">Illustrative comparison only. Transfado is a sandbox demo and is not affiliated with any company named.</div>
     </div>
   </div>
 </section>
@@ -201,15 +202,20 @@
 </section>
 
 <footer>
-  <div class="container foot-inner">
-    <div>
-      <a href="/" class="brand" style="font-size:18px"><span class="brand-mark" id="mark2" style="width:28px;height:28px"></span> Trans<small>fado</small></a>
-      <p class="mt8 small" data-i18n="landing.footerTag">© 2026 Transfado</p>
+  <div class="container">
+    <div class="foot-inner">
+      <div>
+        <a href="/" class="brand" style="font-size:18px"><span class="brand-mark" id="mark2" style="width:28px;height:28px"></span> Trans<small>fado</small></a>
+        <p class="mt8 small" data-i18n="landing.footerTag">© 2026 Transfado</p>
+      </div>
+      <div class="small">
+        <a href="/legal/terms">Terms</a> · <a href="/legal/privacy">Privacy</a> · <a href="/legal/acceptable-use">Acceptable Use</a> · <a href="/docs" data-i18n="nav.api">API</a><br>
+        <span class="dim" data-i18n="landing.footerSandbox">Sandbox environment — no real cards are charged.</span>
+      </div>
     </div>
-    <div class="small">
-      <a href="/legal/terms">Terms</a> · <a href="/legal/privacy">Privacy</a> · <a href="/legal/acceptable-use">Acceptable Use</a> · <a href="/docs" data-i18n="nav.api">API</a><br>
-      <span class="dim" data-i18n="landing.footerSandbox">Sandbox environment — no real cards are charged.</span>
-    </div>
+    <p class="dim" style="font-size:12px;line-height:1.6;margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
+      <strong style="color:var(--text-muted)">Sandbox demonstration.</strong> Transfado is a demo/portfolio project. It is <strong>not</strong> a licensed payment processor, money transmitter, or bank, and it <strong>processes no real payments</strong> — only simulated test-card transactions. Do not enter real card numbers. Transfado is not affiliated with, endorsed by, or sponsored by Stripe, PayPal, Square, or any other company named; rate comparisons are illustrative and based on publicly published rates. Contact: <a href="mailto:dylanpier2021@gmail.com">dylanpier2021@gmail.com</a>.
+    </p>
   </div>
 </footer>
 
@@ -287,5 +293,6 @@
   document.addEventListener('localechange', () => { applyI18n(document); renderBars(); renderCalc(); });
 })();
 </script>
+<script src="/js/banner.js"></script>
 </body>
 </html>

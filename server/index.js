@@ -21,6 +21,29 @@ if (seeded) {
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // honor x-forwarded-proto behind Vercel/Render/proxies
+
+// ---- Security headers (every response) ----
+const CSP = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com",
+  "font-src 'self' https://fonts.gstatic.com https://api.fontshare.com data:",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+].join('; ');
+app.use((req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('Referrer-Policy', 'no-referrer-when-downgrade');
+  res.set('Content-Security-Policy', CSP);
+  next();
+});
+
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));

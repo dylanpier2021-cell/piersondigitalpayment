@@ -10,12 +10,16 @@
 
   // ---- Card input helper (number formatting + reader) ----
   function buildCardInputs(prefill = true) {
-    const number = el('input', { type: 'text', inputmode: 'numeric', placeholder: '4242 4242 4242 4242', maxlength: '23', autocomplete: 'cc-number' });
-    const exp = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'MM / YY', maxlength: '7', autocomplete: 'cc-exp' });
-    const cvc = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'CVC', maxlength: '4', autocomplete: 'cc-csc' });
+    const number = el('input', { type: 'text', inputmode: 'numeric', placeholder: '4242 4242 4242 4242', maxlength: '23', autocomplete: 'off' });
+    const exp = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'MM / YY', maxlength: '7', autocomplete: 'off' });
+    const cvc = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'CVC', maxlength: '4', autocomplete: 'off' });
+    const warn = el('p', { class: 'help', style: 'color:var(--negative-text);display:none' });
     number.addEventListener('input', () => {
       let v = number.value.replace(/\D/g, '').slice(0, 19);
       number.value = v.replace(/(.{4})/g, '$1 ').trim();
+      const d = number.value.replace(/\D/g, '');
+      if (d.length >= 8 && !window.PP.isTestCard(d)) { warn.style.display = 'block'; warn.innerHTML = '⚠ That is not a test card. Real cards are never charged — use <b>4242 4242 4242 4242</b>.'; }
+      else warn.style.display = 'none';
     });
     exp.addEventListener('input', () => {
       let v = exp.value.replace(/\D/g, '').slice(0, 4);
@@ -26,12 +30,16 @@
     if (prefill) { number.value = '4242 4242 4242 4242'; exp.value = '12 / 30'; cvc.value = '123'; }
 
     const node = el('div', {}, [
+      el('div', { class: 'fee-break', style: 'margin-bottom:12px;border-color:var(--accent-ring)' }, [
+        el('strong', { class: 'small', text: 'Sandbox — test cards only' }),
+        el('p', { class: 'small muted', style: 'margin-top:6px', html: 'Real cards are <b>never charged</b>. Use <b>4242 4242 4242 4242</b> (approves) or <b>4000 0000 0000 0002</b> (declines). Any future expiry, any CVC.' }),
+      ]),
       el('label', { class: 'field' }, [el('span', { text: 'Card number' }), number]),
       el('div', { class: 'field-row' }, [
         el('label', { class: 'field' }, [el('span', { text: 'Expiry' }), exp]),
         el('label', { class: 'field' }, [el('span', { text: 'CVC' }), cvc]),
       ]),
-      el('p', { class: 'help', html: 'Sandbox test cards: <b>4242…</b> approves · <b>4000 0000 0000 0002</b> declines.' }),
+      warn,
     ]);
     function get() {
       const digits = number.value.replace(/\D/g, '');

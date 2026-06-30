@@ -39,15 +39,26 @@
   function avatar(name){ return (name||'T').trim().charAt(0).toUpperCase(); }
 
   function cardInputs(){
-    const number = el('input',{type:'text',inputmode:'numeric',placeholder:'4242 4242 4242 4242',maxlength:'23',autocomplete:'cc-number'});
-    const exp = el('input',{type:'text',inputmode:'numeric',placeholder:'MM / YY',maxlength:'7',autocomplete:'cc-exp'});
-    const cvc = el('input',{type:'text',inputmode:'numeric',placeholder:'CVC',maxlength:'4',autocomplete:'cc-csc'});
-    number.addEventListener('input',()=>{let v=number.value.replace(/\D/g,'').slice(0,19);number.value=v.replace(/(.{4})/g,'$1 ').trim();});
+    const number = el('input',{type:'text',inputmode:'numeric',placeholder:'4242 4242 4242 4242',maxlength:'23',autocomplete:'off',value:'4242 4242 4242 4242'});
+    const exp = el('input',{type:'text',inputmode:'numeric',placeholder:'MM / YY',maxlength:'7',autocomplete:'off',value:'12 / 30'});
+    const cvc = el('input',{type:'text',inputmode:'numeric',placeholder:'CVC',maxlength:'4',autocomplete:'off',value:'123'});
+    const warn = el('p',{class:'help',style:'color:var(--negative-text);display:none;margin-top:6px'});
+    number.addEventListener('input',()=>{
+      let v=number.value.replace(/\D/g,'').slice(0,19);number.value=v.replace(/(.{4})/g,'$1 ').trim();
+      const d=number.value.replace(/\D/g,'');
+      if(d.length>=8 && !window.PP.isTestCard(d)){ warn.style.display='block'; warn.innerHTML='⚠ That is not a test card. Real cards are never charged here — use <b>4242 4242 4242 4242</b>.'; }
+      else warn.style.display='none';
+    });
     exp.addEventListener('input',()=>{let v=exp.value.replace(/\D/g,'').slice(0,4);if(v.length>=3)v=v.slice(0,2)+' / '+v.slice(2);exp.value=v;});
     cvc.addEventListener('input',()=>{cvc.value=cvc.value.replace(/\D/g,'');});
     const node = el('div',{},[
+      el('div',{class:'fee-break',style:'margin-bottom:12px;border-color:var(--accent-ring)'},[
+        el('strong',{class:'small',text:'Sandbox — test cards only'}),
+        el('p',{class:'small muted',style:'margin-top:6px',html:'Real cards are <b>never charged</b>. Use <b>4242 4242 4242 4242</b> (Visa), 5555 5555 5555 4444 (Mastercard) or 3782 822463 10005 (Amex). Any future expiry, any CVC.'}),
+      ]),
       el('label',{class:'field'},[el('span',{text:t('checkout.cardInfo')}),number]),
       el('div',{class:'field-row'},[exp,cvc]),
+      warn,
     ]);
     function get(){const d=number.value.replace(/\D/g,'');const ev=exp.value.replace(/\D/g,'');return {number:d,exp_month:ev.slice(0,2),exp_year:ev.slice(2),cvc:cvc.value};}
     return {node,get};
@@ -161,5 +172,6 @@
   });
 })();
 </script>
+<script src="/js/banner.js"></script>
 </body>
 </html>

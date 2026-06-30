@@ -89,8 +89,12 @@ function attachUser(req, res, next) {
 }
 
 function setSessionCookie(res, token) {
+  // `secure` only over HTTPS (so localhost dev over http still works); httpOnly
+  // always, so client JS can never read the session cookie.
+  const secure = !!(res.req && res.req.secure);
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
+    secure,
     sameSite: 'lax',
     maxAge: SESSION_TTL_MS,
     path: '/',
@@ -98,7 +102,7 @@ function setSessionCookie(res, token) {
 }
 
 function clearSessionCookie(res) {
-  res.clearCookie(SESSION_COOKIE, { path: '/' });
+  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, secure: !!(res.req && res.req.secure), sameSite: 'lax' });
 }
 
 // ---- Route guards -------------------------------------------------------

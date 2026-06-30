@@ -87,6 +87,11 @@ function timeAgo(ms) {
 }
 function brandIcon(brand) { return ({ visa: 'VISA', mastercard: 'MC', amex: 'AMEX', discover: 'DISC', unknown: 'CARD' }[brand]) || 'CARD'; }
 
+// Sandbox test cards — the ONLY numbers the simulated network accepts. Used to
+// warn anyone who tries to type a real card (which is never charged).
+const TEST_CARDS = ['4242424242424242', '4000056655665556', '5555555555554444', '5200828282828210', '378282246310005', '6011111111111117', '4000000000000002', '4000000000009995', '4000000000000069', '4000000000000127'];
+function isTestCard(num) { return TEST_CARDS.indexOf(String(num || '').replace(/\D/g, '')) !== -1; }
+
 // ---------- Brand mark (custom geometric T with transfer glyph) ----------
 function brandMark() {
   return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -294,7 +299,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 window.PP = {
   $, $$, el, escapeHtml, money, centsFromDollars, pct, fmtDate, fmtDateTime, timeAgo, brandIcon, brandMark,
   api, getSession, requireRole, logout, toast, copyText, openModal, closeModal, modalShell, renderChart, emptyState,
-  skeleton, countUp, confetti, reducedMotion,
+  skeleton, countUp, confetti, reducedMotion, TEST_CARDS, isTestCard,
   t, setLocale, applyI18n, detectLang, LOCALES, LOCALE_NAMES, get LANG() { return LANG; }, ready,
   getTheme, applyTheme, toggleTheme, topControls, ICON,
   setCommands, openPalette, closePalette, qrCanvas,

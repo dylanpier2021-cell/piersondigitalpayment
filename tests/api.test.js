@@ -95,6 +95,17 @@ async function run() {
   const pd = await pr.json();
   c.ok(pr.status === 200 && pd.receipt && pd.receipt.businessName, 'public checkout pays link');
 
+  // ---- security headers + httpOnly cookie ----
+  const hr = await merch.fetch('/api/health');
+  c.ok(hr.res.headers.get('x-content-type-options') === 'nosniff', 'X-Content-Type-Options: nosniff');
+  c.ok(hr.res.headers.get('x-frame-options') === 'DENY', 'X-Frame-Options: DENY');
+  c.ok(/default-src 'self'/.test(hr.res.headers.get('content-security-policy') || ''), 'Content-Security-Policy present');
+  c.ok(!!hr.res.headers.get('referrer-policy'), 'Referrer-Policy present');
+  c.ok(hr.data.storage !== undefined, 'health reports storage mode');
+  const lr = await fetch((process.env.TF_TEST_BASE || 'http://localhost:4242') + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'owner@transfado.com', password: 'transfado123' }) });
+  const setCookie = (lr.headers.getSetCookie ? lr.headers.getSetCookie() : [lr.headers.get('set-cookie')]).join(';');
+  c.ok(/HttpOnly/i.test(setCookie), 'session cookie is HttpOnly');
+
   return c.result();
 }
 
