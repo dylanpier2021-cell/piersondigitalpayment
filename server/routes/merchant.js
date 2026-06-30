@@ -9,9 +9,58 @@ const fees = require('../fees');
 const charges = require('../charges');
 const billing = require('../billing');
 const links = require('../links');
+const cards = require('../cards');
 const merchantsSvc = require('../merchants');
 const metrics = require('../metrics');
 const { prefixedId, now, iso } = require('../util');
+
+const BRAND_LABEL = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', discover: 'Discover', unknown: 'Card' };
+
+/**
+ * Validate + build a safe payout method (debit card or bank account).
+ * Only last4 / brand / routing are stored — never the full card or account number.
+ * Throws { status, message } on invalid input.
+ */
+function buildPayoutMethod(input = {}) {
+  const type = input.type === 'card' ? 'card' : 'bank';
+
+  if (type === 'card') {
+    const number = String(input.number || '').replace(/\D/g, '');
+    if (!cards.luhnValid(number)) throw { status: 400, message: 'Enter a valid debit card number.' };
+    const month = Number(input.exp_month);
+    const year = Number(input.exp_year);
+    if (!month || month < 1 || month > 12) throw { status: 400, message: 'Enter a valid expiry month.' };
+    if (!year) throw { status: 400, message: 'Enter a valid expiry year.' };
+    const fullYear = year < 100 ? 2000 + year : year;
+    const brand = cards.detectBrand(number);
+    const last4 = number.slice(-4);
+    return {
+      type: 'card',
+      brand,
+      last4,
+      expMonth: month,
+      expYear: fullYear,
+      holderName: String(input.name || '').trim(),
+      label: `${BRAND_LABEL[brand] || 'Card'} debit ••${last4}`,
+    };
+  }
+
+  // Bank account (ACH).
+  const account = String(input.accountNumber || '').replace(/\D/g, '');
+  const routing = String(input.routingNumber || '').replace(/\D/g, '');
+  if (account.length < 4) throw { status: 400, message: 'Enter a valid account number.' };
+  if (routing.length !== 9) throw { status: 400, message: 'Routing number must be 9 digits.' };
+  const last4 = account.slice(-4);
+  const bankName = String(input.bankName || '').trim();
+  return {
+    type: 'bank',
+    bankName,
+    last4,
+    routing,
+    holderName: String(input.name || '').trim(),
+    label: `${bankName || 'Bank account'} ••${last4}`,
+  };
+}
 
 // Every route here requires an authenticated, active merchant.
 router.use(auth.requireMerchant);
@@ -175,13 +224,36 @@ router.get('/payouts', (req, res) => {
   const list = db
     .find('payouts', (p) => p.merchantId === req.merchant.id)
     .sort((a, b) => b.createdAt - a.createdAt);
-  res.json({ data: list, balance: req.merchant.balance });
+  res.json({ data: list, balance: req.merchant.balance, payoutMethod: req.merchant.payoutMethod || null });
+});
+
+// Save / update where payouts go (debit card or bank account).
+router.put('/payout-method', (req, res) => {
+  try {
+    const method = buildPayoutMethod(req.body || {});
+    db.update('merchants', req.merchant.id, { payoutMethod: method });
+    merchantsSvc.logEvent('payout_method.updated', { merchantId: req.merchant.id, type: method.type });
+    res.json({ ok: true, payoutMethod: method });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: { message: err.message || 'Could not save payout method.' } });
+  }
+});
+
+router.delete('/payout-method', (req, res) => {
+  db.update('merchants', req.merchant.id, { payoutMethod: null });
+  res.json({ ok: true });
 });
 
 router.post('/payouts', (req, res) => {
   const amount = Math.round(Number(req.body && req.body.amount));
   if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: { message: 'Invalid amount.' } });
   if (amount > req.merchant.balance) return res.status(400).json({ error: { message: 'Amount exceeds available balance.' } });
+
+  const method = req.merchant.payoutMethod;
+  if (!method) {
+    return res.status(400).json({ error: { message: 'Add a payout method before paying out.', code: 'no_payout_method' } });
+  }
+
   const ts = now();
   // Capture the new balance BEFORE mutating: req.merchant is the same object
   // reference the DB stores, so db.update() changes req.merchant.balance in place.
@@ -193,8 +265,9 @@ router.post('/payouts', (req, res) => {
     amount,
     currency: 'usd',
     status: 'paid',
-    method: 'standard',
-    destination: 'Bank account ••••6789',
+    method: method.type === 'card' ? 'instant' : 'standard',
+    destination: method.label,
+    destinationType: method.type,
     createdAt: ts,
     createdIso: iso(ts),
   };

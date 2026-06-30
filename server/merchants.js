@@ -64,6 +64,7 @@ function createMerchant({ businessName, email, password, contactName, feePlanId,
     balance: 0, // available funds in cents
     currency: 'usd',
     status: 'active', // active | suspended
+    payoutMethod: null, // where payouts go (debit card or bank account)
     publishableKey: keys.publishableKey,
     secretKey: keys.secretKey,
     createdAt: ts,
@@ -114,6 +115,7 @@ function publicMerchant(m) {
     status: m.status,
     publishableKey: m.publishableKey,
     currency: m.currency,
+    payoutMethod: m.payoutMethod || null,
     createdAt: m.createdAt,
   };
 }

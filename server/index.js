@@ -49,6 +49,19 @@ app.get('/admin', page('admin.html'));
 app.get('/docs', page('docs.html'));
 app.get('/pay/:id', page('checkout.html'));
 
+// ---- Legal / policy pages ----
+app.get('/legal', page('legal/index.html'));
+app.get('/legal/terms', page('legal/terms.html'));
+app.get('/legal/privacy', page('legal/privacy.html'));
+app.get('/legal/acceptable-use', page('legal/acceptable-use.html'));
+
+// Serve the compliance/gap-analysis doc (lives at the project root).
+app.get(['/COMPLIANCE.md', '/compliance'], (req, res) => {
+  res.type('text/markdown; charset=utf-8').sendFile(path.join(__dirname, '..', 'COMPLIANCE.md'), (err) => {
+    if (err) res.status(404).send('Not found');
+  });
+});
+
 // ---- Static assets ----
 app.use(express.static(PUBLIC_DIR, { extensions: ['html'] }));
 

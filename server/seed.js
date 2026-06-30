@@ -87,6 +87,7 @@ function buildMerchant(def, ts) {
     balance: 0,
     currency: 'usd',
     status: def.status || 'active',
+    payoutMethod: def.payoutMethod || null,
     publishableKey: keys.publishableKey,
     secretKey: keys.secretKey,
     createdAt: ts,
@@ -141,13 +142,15 @@ function seed() {
     createdAt: now(),
   });
 
-  // ---- Sample clients ----
+  // ---- Sample clients (each with a demo payout method) ----
+  const bank = (name, last4, holder) => ({ type: 'bank', bankName: name, last4, routing: '110000000', holderName: holder, label: `${name} ••${last4}` });
+  const debit = (brand, last4, holder) => ({ type: 'card', brand, last4, expMonth: 8, expYear: 2031, holderName: holder, label: `${brand[0].toUpperCase() + brand.slice(1)} debit ••${last4}` });
   const merchantDefs = [
-    { businessName: "Boochie's Slots & Video Poker", email: 'boochies@example.com', password: 'demo1234', contactName: 'Boochie', website: 'boochiesplace.com', feePlanId: plans[1].id },
-    { businessName: 'KEI Events', email: 'aricka@example.com', password: 'demo1234', contactName: 'Aricka Dean', website: 'kei-events.com', feePlanId: plans[0].id, feeOverride: { pricePct: 360, priceFixed: 40 } },
-    { businessName: "Jermaine's Home Services", email: 'jermaine@example.com', password: 'demo1234', contactName: 'Jermaine', feePlanId: plans[0].id },
-    { businessName: 'The Gloss Spot', email: 'gloss@example.com', password: 'demo1234', contactName: 'Front Desk', feePlanId: plans[0].id },
-    { businessName: 'MAD Landscaping', email: 'mad@example.com', password: 'demo1234', contactName: 'Owner', feePlanId: plans[1].id },
+    { businessName: "Boochie's Slots & Video Poker", email: 'boochies@example.com', password: 'demo1234', contactName: 'Boochie', website: 'boochiesplace.com', feePlanId: plans[1].id, payoutMethod: debit('visa', '4242', 'Boochie') },
+    { businessName: 'KEI Events', email: 'aricka@example.com', password: 'demo1234', contactName: 'Aricka Dean', website: 'kei-events.com', feePlanId: plans[0].id, feeOverride: { pricePct: 360, priceFixed: 40 }, payoutMethod: bank('Chase', '8842', 'Aricka Dean') },
+    { businessName: "Jermaine's Home Services", email: 'jermaine@example.com', password: 'demo1234', contactName: 'Jermaine', feePlanId: plans[0].id, payoutMethod: bank('Bank of America', '5511', 'Jermaine') },
+    { businessName: 'The Gloss Spot', email: 'gloss@example.com', password: 'demo1234', contactName: 'Front Desk', feePlanId: plans[0].id, payoutMethod: debit('mastercard', '4444', 'The Gloss Spot') },
+    { businessName: 'MAD Landscaping', email: 'mad@example.com', password: 'demo1234', contactName: 'Owner', feePlanId: plans[1].id, payoutMethod: bank('Wells Fargo', '2093', 'MAD Landscaping') },
   ];
 
   const merchants = merchantDefs.map((def, i) => buildMerchant(def, now() - (70 - i) * DAY));
@@ -269,8 +272,9 @@ function seed() {
         amount: payoutAmount,
         currency: 'usd',
         status: 'paid',
-        method: 'standard',
-        destination: 'Bank account ••••6789',
+        method: merchant.payoutMethod && merchant.payoutMethod.type === 'card' ? 'instant' : 'standard',
+        destination: merchant.payoutMethod ? merchant.payoutMethod.label : 'Bank account ••5678',
+        destinationType: merchant.payoutMethod ? merchant.payoutMethod.type : 'bank',
         createdAt: now() - randInt(3, 15) * DAY,
         createdIso: iso(now()),
       });

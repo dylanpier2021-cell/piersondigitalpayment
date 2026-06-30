@@ -388,20 +388,37 @@
   async function renderPayouts() {
     const host = $('#page-payouts');
     host.innerHTML = '<div class="loading-block"><span class="spinner"></span></div>';
-    const { data: payouts, balance } = await api('/api/merchant/payouts');
+    const { data: payouts, balance, payoutMethod } = await api('/api/merchant/payouts');
     host.innerHTML = '';
 
+    const hasMethod = !!payoutMethod;
     const amount = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0.00' });
     const err = el('div', { class: 'form-error' });
-    const btn = el('button', { class: 'btn btn-green btn-block btn-lg', text: 'Pay out to bank' });
+    const btnLabel = hasMethod ? (payoutMethod.type === 'card' ? 'Pay out to card' : 'Pay out to bank') : 'Add a payout method first';
+    const btn = el('button', { class: 'btn btn-green btn-block btn-lg', text: btnLabel, disabled: hasMethod ? null : 'disabled' });
     btn.addEventListener('click', async () => {
       err.textContent = '';
       const cents = centsFromDollars(amount.value);
       if (!Number.isFinite(cents) || cents <= 0) { err.textContent = 'Enter an amount.'; return; }
       btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-      try { await api('/api/merchant/payouts', { method: 'POST', body: { amount: cents } }); toast('Payout of ' + money(cents) + ' sent ✓', 'success'); renderPayouts(); }
-      catch (ex) { err.textContent = ex.message; btn.disabled = false; btn.textContent = 'Pay out to bank'; }
+      try { const r = await api('/api/merchant/payouts', { method: 'POST', body: { amount: cents } }); toast('Payout of ' + money(cents) + ' sent to ' + r.payout.destination + ' ✓', 'success'); renderPayouts(); }
+      catch (ex) { err.textContent = ex.message; btn.disabled = false; btn.textContent = btnLabel; }
     });
+
+    // Payout method card
+    const methodCard = el('div', { class: 'card mb24' }, [
+      el('div', { class: 'row-between mb16' }, [el('h3', { text: 'Payout method' }), el('button', { class: 'btn btn-ghost btn-sm', text: hasMethod ? 'Change' : 'Add', onclick: () => payoutMethodModal(payoutMethod) })]),
+      hasMethod
+        ? el('div', { class: 'fee-break' }, [
+            el('div', { class: 'row-between' }, [
+              el('span', {}, [el('span', { class: 'badge neutral plain', text: payoutMethod.type === 'card' ? 'Debit card' : 'Bank account' })]),
+              el('strong', { text: payoutMethod.label }),
+            ]),
+            payoutMethod.type === 'card' ? el('div', { class: 'row-between' }, [el('span', { class: 'muted', text: 'Expires' }), el('span', { text: String(payoutMethod.expMonth).padStart(2, '0') + '/' + payoutMethod.expYear })]) : null,
+            payoutMethod.holderName ? el('div', { class: 'row-between' }, [el('span', { class: 'muted', text: 'Holder' }), el('span', { text: payoutMethod.holderName })]) : null,
+          ])
+        : el('p', { class: 'help', text: 'Add your debit card or bank account to receive payouts.' }),
+    ]);
 
     const payoutCard = el('div', { class: 'card' }, [
       el('div', { class: 'stat-label', text: 'Available balance' }),
@@ -410,8 +427,10 @@
       el('label', { class: 'field' }, [el('span', { text: 'Payout amount' }), el('div', { class: 'input-group' }, [el('span', { class: 'input-prefix', text: '$' }), amount])]),
       el('button', { class: 'btn btn-ghost btn-sm mb16', text: 'Pay out full balance', onclick: () => { amount.value = (balance / 100).toFixed(2); } }),
       err, btn,
-      el('p', { class: 'help center mt16', text: 'Destination: Bank account ••••6789 (sandbox)' }),
+      el('p', { class: 'help center mt16', text: hasMethod ? 'Destination: ' + payoutMethod.label + (payoutMethod.type === 'card' ? ' · instant' : ' · 1–2 business days') : 'No payout method set' }),
     ]);
+
+    const rightCol = el('div', {}, [methodCard, payoutCard]);
 
     const historyCard = el('div', { class: 'card' }, [
       el('h3', { class: 'mb16', text: 'Payout history' }),
@@ -426,7 +445,75 @@
       ])]) : emptyState('🏦', 'No payouts yet'),
     ]);
 
-    host.appendChild(el('div', { class: 'grid-side' }, [historyCard, payoutCard]));
+    host.appendChild(el('div', { class: 'grid-side' }, [historyCard, rightCol]));
+  }
+
+  function payoutMethodModal(current) {
+    let type = current ? current.type : 'card';
+    const seg = el('div', { class: 'segmented mb16' }, [
+      el('button', { class: type === 'card' ? 'active' : '', text: 'Debit card', onclick: () => switchType('card') }),
+      el('button', { class: type === 'bank' ? 'active' : '', text: 'Bank account', onclick: () => switchType('bank') }),
+    ]);
+
+    // Card fields
+    const cardNum = el('input', { type: 'text', inputmode: 'numeric', placeholder: '4242 4242 4242 4242', maxlength: '23' });
+    const cardExp = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'MM / YY', maxlength: '7' });
+    cardNum.addEventListener('input', () => { let v = cardNum.value.replace(/\D/g, '').slice(0, 19); cardNum.value = v.replace(/(.{4})/g, '$1 ').trim(); });
+    cardExp.addEventListener('input', () => { let v = cardExp.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 3) v = v.slice(0, 2) + ' / ' + v.slice(2); cardExp.value = v; });
+    const cardName = el('input', { type: 'text', placeholder: 'Name on card' });
+    const cardFields = el('div', {}, [
+      el('label', { class: 'field' }, [el('span', { text: 'Debit card number' }), cardNum]),
+      el('div', { class: 'field-row' }, [
+        el('label', { class: 'field' }, [el('span', { text: 'Expiry' }), cardExp]),
+        el('label', { class: 'field' }, [el('span', { text: 'Name on card' }), cardName]),
+      ]),
+      el('p', { class: 'help', html: 'Sandbox: use <b>4242 4242 4242 4242</b>. Real payouts to a card require a live payout rail.' }),
+    ]);
+
+    // Bank fields
+    const bankName = el('input', { type: 'text', placeholder: 'e.g. Chase' });
+    const routing = el('input', { type: 'text', inputmode: 'numeric', placeholder: '9 digits', maxlength: '9' });
+    const account = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'Account number' });
+    const acctName = el('input', { type: 'text', placeholder: 'Account holder name' });
+    routing.addEventListener('input', () => { routing.value = routing.value.replace(/\D/g, ''); });
+    account.addEventListener('input', () => { account.value = account.value.replace(/\D/g, ''); });
+    const bankFields = el('div', { style: 'display:none' }, [
+      el('label', { class: 'field' }, [el('span', { text: 'Bank name' }), bankName]),
+      el('div', { class: 'field-row' }, [
+        el('label', { class: 'field' }, [el('span', { text: 'Routing number' }), routing]),
+        el('label', { class: 'field' }, [el('span', { text: 'Account number' }), account]),
+      ]),
+      el('label', { class: 'field' }, [el('span', { text: 'Account holder name' }), acctName]),
+    ]);
+
+    function switchType(t) {
+      type = t;
+      seg.children[0].classList.toggle('active', t === 'card');
+      seg.children[1].classList.toggle('active', t === 'bank');
+      cardFields.style.display = t === 'card' ? 'block' : 'none';
+      bankFields.style.display = t === 'bank' ? 'block' : 'none';
+    }
+    switchType(type);
+
+    const err = el('div', { class: 'form-error' });
+    const save = el('button', { class: 'btn btn-primary', text: 'Save payout method' });
+    save.addEventListener('click', async () => {
+      err.textContent = '';
+      let body;
+      if (type === 'card') {
+        const ev = cardExp.value.replace(/\D/g, '');
+        body = { type: 'card', number: cardNum.value.replace(/\D/g, ''), exp_month: ev.slice(0, 2), exp_year: ev.slice(2), name: cardName.value };
+      } else {
+        body = { type: 'bank', bankName: bankName.value, routingNumber: routing.value, accountNumber: account.value, name: acctName.value };
+      }
+      save.disabled = true; save.innerHTML = '<span class="spinner"></span>';
+      try {
+        await api('/api/merchant/payout-method', { method: 'PUT', body });
+        toast('Payout method saved ✓', 'success'); closeModal(); renderPayouts();
+      } catch (ex) { err.textContent = ex.message; save.disabled = false; save.textContent = 'Save payout method'; }
+    });
+
+    openModal(modalShell('Payout method', [seg, cardFields, bankFields, err], [el('button', { class: 'btn btn-ghost', text: 'Cancel', onclick: closeModal }), save]));
   }
 
   // ============================ DEVELOPERS ============================

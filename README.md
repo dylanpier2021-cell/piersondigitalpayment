@@ -49,7 +49,7 @@ npm run seed     # wipes data/db.json and reseeds fresh demo data
 - **Payments**: a **virtual terminal** to charge a card (with a live fee preview), full transaction history, one-click **refunds**.
 - **Payment Links**: create shareable checkout links — **one-time or recurring** — copy the URL, enable/disable, track payments. Just like Stripe.
 - **Subscriptions**: start recurring plans (weekly/monthly/yearly), see MRR and next billing date, cancel anytime.
-- **Payouts**: withdraw the available balance to a bank (simulated), with history.
+- **Payouts**: add a **payout method** (debit card or bank account) and withdraw the available balance to it (simulated), with history.
 - **Developers**: publishable + secret API keys (roll them), with a copy-paste cURL example.
 - **Settings**: business profile, statement descriptor, and a view of their rate.
 
@@ -115,6 +115,13 @@ Endpoints: `POST/GET /v1/charges`, `POST /v1/refunds`, `POST/GET /v1/subscriptio
 Any future expiry, any 3-digit CVC (4 for Amex).
 
 ---
+
+## Legal & compliance
+
+- **Legal pages** at `/legal` — Terms of Service, Privacy Policy, and an Acceptable Use Policy (prohibited businesses / AML) with operator-protective disclaimers (sandbox notice, not-a-bank, no-warranty, limitation of liability, indemnification). Linked from the landing footer, checkout, dashboards, and a required consent checkbox at signup.
+- **[COMPLIANCE.md](COMPLIANCE.md)** — an honest gap analysis of what a production processor needs that this MVP doesn't yet (real settlement, disputes/chargebacks, PCI tokenization, KYC/KYB, OFAC screening, webhooks, idempotency, licensing, 1099-K, etc.) plus a go-live checklist.
+
+> ⚠️ The legal pages are **templates, not legal advice** — have a licensed attorney review and adapt them before any real, commercial, or money-handling use.
 
 ## Architecture
 

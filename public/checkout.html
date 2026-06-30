@@ -104,6 +104,7 @@
     if(link.collectEmail) formFields.push(el('label',{class:'field'},[el('span',{text:'Email'}),cemail]));
     formFields.push(card.node, err, btn);
     formFields.push(el('p',{class:'help center mt16',html:'Test card <b>4242 4242 4242 4242</b>, any future expiry, any CVC.'}));
+    formFields.push(el('p',{class:'help center',style:'margin-top:6px',html:'Secured by Pierson Pay · <a href="/legal/privacy" target="_blank">Privacy</a> · <a href="/legal/terms" target="_blank">Terms</a>'}));
 
     const formSide = el('div',{class:'pay-form-side'},[el('div',{class:'inner'},[
       el('h3',{class:'mb24',text:isSub?'Start your subscription':'Payment details'}),

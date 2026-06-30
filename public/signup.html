@@ -53,6 +53,10 @@
           <input type="email" name="email" autocomplete="email" required placeholder="you@business.com"></label>
         <label class="field"><span>Password</span>
           <input type="password" name="password" autocomplete="new-password" required minlength="6" placeholder="At least 6 characters"></label>
+        <label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted);margin-bottom:16px;cursor:pointer">
+          <input type="checkbox" name="consent" required style="width:auto;margin-top:3px;flex:none">
+          <span>I agree to the <a href="/legal/terms" target="_blank">Terms of Service</a> and <a href="/legal/privacy" target="_blank">Privacy Policy</a>.</span>
+        </label>
         <div class="form-error" id="err"></div>
         <button class="btn btn-primary btn-block btn-lg" type="submit" id="submit">Create account</button>
       </form>
