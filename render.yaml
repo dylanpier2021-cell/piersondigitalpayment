@@ -1,28 +1,44 @@
-# Render Blueprint — one-click deploy.
+# Render Blueprint — PERSISTENT production deploy (real client signups survive restarts).
 # In Render: New + → Blueprint → connect this GitHub repo → Apply.
-# Render reads this file and provisions the service automatically.
+#
+# This uses a paid "starter" plan + a 1 GB persistent disk so the database
+# survives restarts/redeploys (the #1 requirement for real accounts).
+# SEED_DEMO=false → a clean platform (only the owner + admin + fee plans + coupons);
+# real signups start empty. To preview with demo data, set SEED_DEMO=true.
+#
+# Free, NON-persistent alternative: set `plan: free`, remove the `disk:` block
+# and the TF_DATA_DIR var. Data then re-seeds on restart (fine for a demo).
 services:
   - type: web
     name: transfado
     runtime: node
-    plan: free
+    plan: starter
     region: oregon
     buildCommand: npm ci --omit=dev
     startCommand: node server/index.js
     healthCheckPath: /api/health
     autoDeploy: true
+    disk:
+      name: transfado-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: TF_DATA_DIR
+        value: /var/data
+      - key: SEED_DEMO
+        value: "false"
       - key: SESSION_SECRET
-        generateValue: true # Render generates a strong secret
+        generateValue: true
+      - key: OWNER_EMAIL
+        value: dylanpier2021@gmail.com
+      - key: OWNER_PASSWORD
+        value: owner1234
       - key: ADMIN_EMAIL
         value: owner@transfado.com
       - key: ADMIN_PASSWORD
         value: transfado123
-      # For a PERSISTENT database, switch plan to "starter", uncomment the disk
-      # block below, and add:  - key: TF_DATA_DIR  value: /var/data
-    # disk:
-    #   name: data
-    #   mountPath: /var/data
-    #   sizeGB: 1
+      # Optional: real email (verify/reset/welcome). Leave unset for sandbox.
+      # - key: RESEND_API_KEY
+      #   sync: false

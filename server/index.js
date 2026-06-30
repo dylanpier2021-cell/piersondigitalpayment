@@ -35,7 +35,8 @@ app.use('/api/public', require('./routes/public'));
 app.use('/v1', require('./routes/api'));
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, mode: config.PROCESSING_MODE, name: db.getData().meta.settings.platformName });
+  const storage = process.env.VERCEL ? 'ephemeral' : (process.env.TF_DATA_DIR ? 'persistent' : 'local');
+  res.json({ ok: true, mode: config.PROCESSING_MODE, name: db.getData().meta.settings.platformName, storage });
 });
 
 // ---- Clean-URL pages ----
@@ -45,6 +46,9 @@ function page(file) {
 app.get('/', page('index.html'));
 app.get('/login', page('login.html'));
 app.get('/signup', page('signup.html'));
+app.get('/forgot', page('forgot.html'));
+app.get('/reset', page('reset.html'));
+app.get('/verify-email', page('verify-email.html'));
 app.get('/dashboard', page('dashboard.html'));
 app.get('/admin', page('admin.html'));
 app.get('/docs', page('docs.html'));

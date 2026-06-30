@@ -34,8 +34,8 @@ function createMerchant({ businessName, email, password, contactName, feePlanId,
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     throw { status: 400, message: 'A valid email is required.' };
   }
-  if (!password || String(password).length < 6) {
-    throw { status: 400, message: 'Password must be at least 6 characters.' };
+  if (!password || String(password).length < 8) {
+    throw { status: 400, message: 'Password must be at least 8 characters.' };
   }
   if (auth.findUserByEmail(email)) {
     throw { status: 409, message: 'An account with that email already exists.' };
@@ -82,6 +82,7 @@ function createMerchant({ businessName, email, password, contactName, feePlanId,
     name: contactName || businessName,
     email,
     passwordHash: auth.hashPassword(password),
+    verified: false,
     createdAt: ts,
   };
   db.insert('users', user);

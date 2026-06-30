@@ -53,6 +53,25 @@ function getSessionUser(token) {
 }
 
 /**
+ * Purpose-bound, stateless, signed tokens for email verification + password
+ * reset. Bound to a `purpose` so a verify token can't double as a reset token.
+ */
+function createToken(purpose, userId, ttlMs) {
+  const expiresAt = now() + ttlMs;
+  const mac = sign(`${purpose}.${userId}.${expiresAt}`, config.SESSION_SECRET);
+  return `${userId}.${expiresAt}.${mac}`;
+}
+function verifyToken(purpose, token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [userId, expiresStr, mac] = parts;
+  if (!safeEqual(mac, sign(`${purpose}.${userId}.${expiresStr}`, config.SESSION_SECRET))) return null;
+  if (!Number.isFinite(Number(expiresStr)) || Number(expiresStr) < now()) return null;
+  return userId;
+}
+
+/**
  * Middleware: attach req.user (and req.merchant for merchant users) from the
  * session cookie, if present. Never blocks the request.
  */
@@ -163,6 +182,8 @@ module.exports = {
   createSession,
   destroySession,
   getSessionUser,
+  createToken,
+  verifyToken,
   attachUser,
   setSessionCookie,
   clearSessionCookie,

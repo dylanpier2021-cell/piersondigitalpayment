@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose a new password — Transfado</title>
+<script>try{var t=localStorage.getItem('tf_theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div style="min-height:100vh;display:grid;place-items:center;padding:24px;position:relative;overflow:hidden">
+  <div class="aurora"><span class="a1"></span><span class="a2"></span></div>
+  <div class="card card-pad-lg" style="max-width:420px;width:100%;position:relative;z-index:2">
+    <a href="/" class="brand mb24" style="display:inline-flex"><span class="brand-mark" id="mark"></span> Trans<small>fado</small></a>
+    <h1 style="font-size:28px">Choose a new password</h1>
+    <p class="muted mb24">At least 8 characters.</p>
+    <form id="f">
+      <label class="field"><span>New password</span><input type="password" name="password" required minlength="8" placeholder="••••••••"></label>
+      <div class="form-error" id="err"></div>
+      <button class="btn btn-primary btn-block btn-lg" id="submit" type="submit">Reset password</button>
+    </form>
+    <div id="done" class="hidden"></div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+(function(){
+  const { $, api, brandMark, el } = window.PP;
+  $('#mark').innerHTML = brandMark();
+  const token = new URLSearchParams(location.search).get('token');
+  const f=$('#f'), err=$('#err'), submit=$('#submit');
+  if(!token){ err.textContent='Missing reset token.'; submit.disabled=true; }
+  f.addEventListener('submit', async (e)=>{
+    e.preventDefault(); err.textContent=''; submit.disabled=true; submit.innerHTML='<span class="spinner"></span>';
+    try{
+      await api('/auth/reset',{method:'POST',body:{token,password:f.password.value}});
+      f.classList.add('hidden');
+      const done=$('#done'); done.classList.remove('hidden');
+      done.appendChild(el('div',{class:'fee-break'},[el('strong',{text:'Password updated ✓'}),el('a',{class:'btn btn-primary btn-block mt16',href:'/login',text:'Sign in →'})]));
+    }catch(ex){ err.textContent=ex.message; submit.disabled=false; submit.textContent='Reset password'; }
+  });
+})();
+</script>
+</body>
+</html>

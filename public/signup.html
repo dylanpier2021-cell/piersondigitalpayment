@@ -54,8 +54,15 @@
         </div>
         <label class="field"><span data-i18n="common.email">Email</span>
           <input type="email" name="email" autocomplete="email" required placeholder="you@business.com"></label>
-        <label class="field"><span data-i18n="auth.password">Password</span>
-          <input type="password" name="password" autocomplete="new-password" required minlength="6" placeholder="At least 6 characters"></label>
+        <label class="field" style="margin-bottom:8px"><span data-i18n="auth.password">Password</span>
+          <input type="password" name="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></label>
+        <div style="display:flex;gap:5px;margin-bottom:6px" id="pw-bars">
+          <span style="height:4px;flex:1;border-radius:2px;background:var(--surface-3)"></span>
+          <span style="height:4px;flex:1;border-radius:2px;background:var(--surface-3)"></span>
+          <span style="height:4px;flex:1;border-radius:2px;background:var(--surface-3)"></span>
+          <span style="height:4px;flex:1;border-radius:2px;background:var(--surface-3)"></span>
+        </div>
+        <p class="help" id="pw-hint" style="margin-top:0;margin-bottom:16px">Use 8+ characters with a mix of letters, numbers &amp; symbols.</p>
         <label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--text-muted);margin-bottom:16px;cursor:pointer">
           <input type="checkbox" name="consent" required style="width:auto;margin-top:3px;flex:none">
           <span id="consent-text">I agree to the <a href="/legal/terms" target="_blank">Terms of Service</a> and <a href="/legal/privacy" target="_blank">Privacy Policy</a>.</span>
@@ -72,6 +79,22 @@
 (function () {
   const { $, api, brandMark, topControls, applyI18n, t } = window.PP;
   $('#mark').innerHTML = brandMark();
+
+  // Password strength meter
+  (function () {
+    const pw = document.querySelector('input[name=password]');
+    const bars = $('#pw-bars').children, hint = $('#pw-hint');
+    const labels = ['Too weak', 'Weak', 'Good', 'Strong'];
+    const colors = ['var(--negative)', 'var(--warning)', 'var(--accent)', 'var(--positive)'];
+    function score(v) { let s = 0; if (v.length >= 8) s++; if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v)) s++; return s; }
+    pw.addEventListener('input', () => {
+      const s = score(pw.value), idx = Math.max(0, s - 1);
+      for (let i = 0; i < 4; i++) bars[i].style.background = (pw.value && i < s) ? colors[idx] : 'var(--surface-3)';
+      hint.textContent = pw.value ? labels[idx] : 'Use 8+ characters with a mix of letters, numbers & symbols.';
+      hint.style.color = pw.value ? colors[idx] : 'var(--text-muted)';
+    });
+  })();
+
   function consentText() {
     $('#consent-text').innerHTML = t('auth.consent')
       .replace('{terms}', '<a href="/legal/terms" target="_blank">Terms of Service</a>')

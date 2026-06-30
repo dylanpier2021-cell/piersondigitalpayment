@@ -96,9 +96,41 @@
       data.recentTransactions.length ? txnTable(data.recentTransactions.slice(0, 8), false) : emptyState('💳', 'No payments yet'),
     ]);
 
+    // Sandbox notice (always — it's not real money yet).
+    host.appendChild(el('div', { class: 'card mb24', style: 'display:flex;align-items:center;gap:12px;border-color:var(--border-strong)' }, [
+      el('span', { class: 'badge neutral plain', text: 'Sandbox' }),
+      el('span', { class: 'small muted', text: 'Test mode — no real cards are charged. Your account, balances, and transactions are simulated until live processing is connected.' }),
+    ]));
+
+    // First-run onboarding checklist (hides once you're set up).
+    const onboard = buildOnboarding(data);
+    if (onboard) host.appendChild(onboard);
+
     if (waived) host.appendChild(el('div', { class: 'card mb24', style: 'border-color:var(--accent-ring);background:var(--accent-soft)' }, [el('div', { class: 'row gap8', style: 'align-items:center' }, [el('span', { class: 'badge active', text: t('coupon.feesWaived') }), el('span', { class: 'small', text: 'Code ' }), el('strong', { class: 'mono', text: data.rates.coupon.code }), el('span', { class: 'small muted', text: '— you keep 100% of every sale.' })])]));
     host.appendChild(stats);
     host.appendChild(el('div', { class: 'grid-side mt24' }, [chartCard, recent]));
+  }
+
+  function buildOnboarding(data) {
+    const m = data.metrics, merch = data.merchant;
+    const steps = [
+      { done: m.chargeCount > 0, label: 'Take your first payment', go: 'payments' },
+      { done: !!(merch && merch.payoutMethod), label: 'Add a payout method', go: 'payouts' },
+      { done: false, label: 'Create a payment link', go: 'links' },
+      { done: false, label: 'Get your API keys', go: 'developers' },
+    ];
+    const doneCount = steps.filter((s) => s.done).length;
+    if (m.chargeCount > 0 && merch && merch.payoutMethod) return null; // set up enough — hide
+    const check = (on) => '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="' + (on ? 'var(--positive)' : 'var(--text-dim)') + '" stroke-width="2"><circle cx="12" cy="12" r="9"/>' + (on ? '<path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/>' : '') + '</svg>';
+    return el('div', { class: 'card mb24' }, [
+      el('div', { class: 'row-between mb16' }, [el('h3', { text: 'Get started' }), el('span', { class: 'small muted', text: doneCount + ' of ' + steps.length + ' done' })]),
+      el('div', {}, steps.map((s) => el('div', { class: 'row gap8 row-link', style: 'align-items:center;padding:9px 0;border-bottom:1px solid var(--border)', onclick: () => setPage(s.go) }, [
+        el('span', { html: check(s.done) }),
+        el('span', { style: s.done ? 'color:var(--text-muted);text-decoration:line-through' : '', text: s.label }),
+        el('span', { class: 'grow' }),
+        s.done ? null : el('span', { class: 'small', style: 'color:var(--accent)', text: 'Start →' }),
+      ]))),
+    ]);
   }
 
   function tile(label, value, color, sub, count) {

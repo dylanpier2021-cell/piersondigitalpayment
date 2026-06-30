@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify email — Transfado</title>
+<script>try{var t=localStorage.getItem('tf_theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div style="min-height:100vh;display:grid;place-items:center;padding:24px">
+  <div class="card card-pad-lg center" style="max-width:420px;width:100%">
+    <a href="/" class="brand mb24" style="display:inline-flex"><span class="brand-mark" id="mark"></span> Trans<small>fado</small></a>
+    <div id="out"><span class="spinner"></span></div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+(function(){
+  const { $, api, brandMark, el } = window.PP;
+  $('#mark').innerHTML = brandMark();
+  const token = new URLSearchParams(location.search).get('token');
+  const out=$('#out');
+  api('/auth/verify-email',{method:'POST',body:{token}}).then(()=>{
+    out.innerHTML=''; out.appendChild(el('div',{},[el('h1',{style:'font-size:26px',text:'Email verified ✓'}),el('p',{class:'muted mt8 mb16',text:'Thanks — your account is confirmed.'}),el('a',{class:'btn btn-primary',href:'/dashboard',text:'Go to dashboard →'})]));
+  }).catch((ex)=>{
+    out.innerHTML=''; out.appendChild(el('div',{},[el('h1',{style:'font-size:26px',text:'Link expired'}),el('p',{class:'muted mt8 mb16',text:ex.message}),el('a',{class:'btn btn-ghost',href:'/login',text:'Sign in'})]));
+  });
+})();
+</script>
+</body>
+</html>

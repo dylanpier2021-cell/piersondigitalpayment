@@ -48,8 +48,9 @@
       <form id="login-form">
         <label class="field"><span data-i18n="common.email">Email</span>
           <input type="email" name="email" autocomplete="email" required placeholder="you@business.com"></label>
-        <label class="field"><span data-i18n="auth.password">Password</span>
+        <label class="field" style="margin-bottom:6px"><span data-i18n="auth.password">Password</span>
           <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••"></label>
+        <p class="small" style="text-align:right;margin-bottom:14px"><a href="/forgot">Forgot password?</a></p>
         <div class="form-error" id="err"></div>
         <button class="btn btn-primary btn-block btn-lg" type="submit" id="submit" data-i18n="auth.signin">Sign in</button>
       </form>

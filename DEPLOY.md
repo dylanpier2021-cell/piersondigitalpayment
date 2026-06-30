@@ -21,7 +21,9 @@ The repo now ships a **`vercel.json`** + **`api/index.js`** that run the whole E
 3. After deploy, open **`https://transfado.com/api/health`** → it must return JSON. Then `/login` works; sign in with `owner@transfado.com` / `transfado123`.
 4. (Optional) **Project → Settings → Environment Variables**: add `SESSION_SECRET` (long random) and a non-demo `ADMIN_PASSWORD`, then redeploy.
 
-> Vercel's filesystem is read-only except `/tmp`, so the demo DB writes to `/tmp` and **re-seeds on cold starts** (data resets periodically; login always works). For persistent production data, move the JSON store to a managed DB — or use Render/Railway/Fly below with a disk. If your Vercel project is set to a "static" preset, set **Framework Preset = Other** so the `api/` function is used.
+> **Login is now reliable on serverless** — sessions are stateless HMAC-signed cookies (no server-side store), so they survive cold starts and multiple instances.
+>
+> **Persistence caveat:** Vercel's filesystem is read-only except `/tmp`, so the DB writes to `/tmp` and **re-seeds on cold starts** — fine for a demo/sandbox, but **real client signups would not persist.** For real, persistent accounts, deploy on **Render with a persistent disk (Option B — the included `render.yaml` does this)**, or move the JSON store to a managed Postgres. If your Vercel project is set to a "static" preset, set **Framework Preset = Other** so the `api/` function runs.
 
 ## Option B — Render (free, persistent disk option, ~3 minutes)
 

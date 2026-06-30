@@ -32,12 +32,12 @@ async function waitHealth() {
   if (seed.status !== 0) { console.error('Seed failed'); process.exit(1); }
 
   console.log(`Starting server on ${PORT}…`);
-  const srv = spawn('node', ['server/index.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
+  const srv = spawn('node', ['server/index.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), TF_RATELIMIT: 'off' }, stdio: 'ignore' });
 
   const ok = await waitHealth();
   if (!ok) { console.error('Server did not become healthy'); srv.kill(); process.exit(1); }
 
-  const modules = ['./api.test', './coupon.test', './owner.test', './render.test'];
+  const modules = ['./api.test', './coupon.test', './owner.test', './signup.test', './render.test'];
   let totalPass = 0, totalFail = 0; const summaries = [];
   for (const mod of modules) {
     try {
