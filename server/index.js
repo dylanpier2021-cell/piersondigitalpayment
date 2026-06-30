@@ -94,28 +94,34 @@ function runBilling(label) {
   }
 }
 runBilling('startup');
-const ticker = setInterval(() => runBilling(), 60 * 1000);
-if (ticker.unref) ticker.unref();
 
-const server = app.listen(config.PORT, () => {
-  console.log('');
-  console.log('  ╔════════════════════════════════════════════════╗');
-  console.log('  ║   Transfado  —  the new way to get paid        ║');
-  console.log('  ║   sandbox mode · no real cards are charged     ║');
-  console.log('  ╚════════════════════════════════════════════════╝');
-  console.log('');
-  console.log(`  ▸ App:        http://localhost:${config.PORT}`);
-  console.log(`  ▸ Admin:      http://localhost:${config.PORT}/admin`);
-  console.log(`  ▸ Dashboard:  http://localhost:${config.PORT}/dashboard`);
-  console.log('');
-  console.log(`  Admin login:  ${config.ADMIN_EMAIL} / ${config.ADMIN_PASSWORD}`);
-  console.log('  Client login: boochies@example.com / demo1234');
-  console.log('');
-});
+// Only run the long-lived server bits when started directly (`node server/index.js`).
+// When imported as a serverless function (e.g. Vercel via api/index.js) we must
+// NOT bind a port or hold the process open — we just export the Express app.
+if (require.main === module) {
+  const ticker = setInterval(() => runBilling(), 60 * 1000);
+  if (ticker.unref) ticker.unref();
 
-process.on('SIGINT', () => {
-  console.log('\nShutting down…');
-  server.close(() => process.exit(0));
-});
+  const server = app.listen(config.PORT, () => {
+    console.log('');
+    console.log('  ╔════════════════════════════════════════════════╗');
+    console.log('  ║   Transfado  —  the new way to get paid        ║');
+    console.log('  ║   sandbox mode · no real cards are charged     ║');
+    console.log('  ╚════════════════════════════════════════════════╝');
+    console.log('');
+    console.log(`  ▸ App:        http://localhost:${config.PORT}`);
+    console.log(`  ▸ Admin:      http://localhost:${config.PORT}/admin`);
+    console.log(`  ▸ Dashboard:  http://localhost:${config.PORT}/dashboard`);
+    console.log('');
+    console.log(`  Admin login:  ${config.ADMIN_EMAIL} / ${config.ADMIN_PASSWORD}`);
+    console.log('  Client login: boochies@example.com / demo1234');
+    console.log('');
+  });
+
+  process.on('SIGINT', () => {
+    console.log('\nShutting down…');
+    server.close(() => process.exit(0));
+  });
+}
 
 module.exports = app;

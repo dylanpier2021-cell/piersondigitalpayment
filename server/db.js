@@ -15,7 +15,13 @@ const path = require('path');
  */
 
 // TF_DATA_DIR lets the test runner point at an isolated database.
-const DATA_DIR = process.env.TF_DATA_DIR ? path.resolve(process.env.TF_DATA_DIR) : path.join(__dirname, '..', 'data');
+// On serverless hosts (Vercel) the project filesystem is read-only — only /tmp
+// is writable — so fall back to /tmp there unless a data dir was set explicitly.
+const DATA_DIR = process.env.TF_DATA_DIR
+  ? path.resolve(process.env.TF_DATA_DIR)
+  : process.env.VERCEL
+    ? path.join('/tmp', 'transfado-data')
+    : path.join(__dirname, '..', 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const EMPTY = {

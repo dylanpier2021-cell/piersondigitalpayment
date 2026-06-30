@@ -4,6 +4,9 @@
    Tokens drive both dark (default) and light themes.
    ============================================================ */
 
+/* Premium display typeface for headings — loaded app-wide. */
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap');
+
 /* ---------- Tokens: DARK (default) ---------- */
 :root,
 :root[data-theme="dark"] {
@@ -62,7 +65,7 @@
   --t-med:     .28s;
 
   /* fonts */
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-display: 'Clash Display', 'Space Grotesk', 'Inter', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   /* legacy aliases so existing markup keeps working */

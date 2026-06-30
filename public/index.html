@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <style>
   .nav { position: sticky; top:0; z-index:40; background: var(--glass); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); border-bottom:1px solid var(--border); }
@@ -28,7 +29,7 @@
   .hero .aurora { z-index:0; }
   .hero-inner { position:relative; z-index:2; }
   .eyebrow { display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:13px; letter-spacing:.04em; color: var(--accent); background: var(--accent-soft); border:1px solid var(--accent-ring); padding:6px 14px; border-radius:999px; }
-  .hero h1 { font-size: clamp(46px, 7.5vw, 86px); line-height:.97; margin:22px 0 18px; max-width:15ch; letter-spacing:-.035em; }
+  .hero h1 { font-family: var(--font-display); font-weight:700; font-size: clamp(60px, 10vw, 132px); line-height:.9; margin:26px 0 22px; max-width:13ch; letter-spacing:-.05em; text-wrap:balance; }
   .hero p.lead { font-size:20px; color: var(--text-muted); max-width:600px; margin-bottom:30px; }
   .hero .btn-group { display:flex; gap:14px; flex-wrap:wrap; }
   .trust { display:flex; gap:28px; margin-top:42px; flex-wrap:wrap; }

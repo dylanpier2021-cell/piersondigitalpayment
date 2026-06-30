@@ -12,7 +12,18 @@ The current transfado.com is hosting only the static `public/` folder with **no 
 
 ---
 
-## Option A — Render (recommended, free, ~3 minutes)
+## Option A — Vercel (you're already on it)
+
+The repo now ships a **`vercel.json`** + **`api/index.js`** that run the whole Express app (UI + API) as one serverless function, so **every route works** — not just the homepage. The earlier static-only deploy is exactly what made everything 404.
+
+1. Push to GitHub — if your Vercel project is linked to this repo it **auto-deploys**. Otherwise: Vercel → **Add New → Project → import this repo → Deploy**.
+2. Vercel detects `api/index.js` and the `vercel.json` rewrite that routes all paths to it. No build command needed.
+3. After deploy, open **`https://transfado.com/api/health`** → it must return JSON. Then `/login` works; sign in with `owner@transfado.com` / `transfado123`.
+4. (Optional) **Project → Settings → Environment Variables**: add `SESSION_SECRET` (long random) and a non-demo `ADMIN_PASSWORD`, then redeploy.
+
+> Vercel's filesystem is read-only except `/tmp`, so the demo DB writes to `/tmp` and **re-seeds on cold starts** (data resets periodically; login always works). For persistent production data, move the JSON store to a managed DB — or use Render/Railway/Fly below with a disk. If your Vercel project is set to a "static" preset, set **Framework Preset = Other** so the `api/` function is used.
+
+## Option B — Render (free, persistent disk option, ~3 minutes)
 
 This repo ships a **`render.yaml` Blueprint**, so Render configures itself.
 
@@ -27,7 +38,7 @@ This repo ships a **`render.yaml` Blueprint**, so Render configures itself.
 
 ---
 
-## Option B — Railway
+## Option C — Railway
 
 1. **railway.com → New Project → Deploy from GitHub repo.**
 2. Railway detects the `Dockerfile` (or the `Procfile`) and builds. No config needed.
@@ -35,7 +46,7 @@ This repo ships a **`render.yaml` Blueprint**, so Render configures itself.
 4. Generate a domain (Settings → Networking) and verify `/api/health`. Add `transfado.com` as a custom domain.
 5. For persistence: add a **Volume** mounted at `/data` and set `TF_DATA_DIR=/data`.
 
-## Option C — Fly.io
+## Option D — Fly.io
 
 ```bash
 fly launch --copy-config --now   # uses the included fly.toml + Dockerfile
@@ -45,7 +56,7 @@ fly open                          # then /api/health
 ```
 Persistence: `fly volumes create transfado_data --size 1`, then uncomment the `[mounts]` block in `fly.toml`.
 
-## Option D — Any VPS (DigitalOcean / Hetzner / EC2)
+## Option E — Any VPS (DigitalOcean / Hetzner / EC2)
 
 ```bash
 git clone <your-repo-url> transfado
