@@ -5,6 +5,9 @@ node_modules/
 data/db.json
 data/*.bak
 
+# Test runner's isolated database
+tests/.tmpdata/
+
 # Secrets
 .env
 

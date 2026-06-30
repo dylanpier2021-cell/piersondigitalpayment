@@ -14,7 +14,8 @@ const path = require('path');
  * the same shape.
  */
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// TF_DATA_DIR lets the test runner point at an isolated database.
+const DATA_DIR = process.env.TF_DATA_DIR ? path.resolve(process.env.TF_DATA_DIR) : path.join(__dirname, '..', 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const EMPTY = {
@@ -23,7 +24,7 @@ const EMPTY = {
     createdAt: null,
     // Platform-wide settings editable by the admin.
     settings: {
-      platformName: 'Pierson Pay',
+      platformName: 'Transfado',
       defaultFeePlanId: null,
       payoutHoldDays: 2,
     },
@@ -35,6 +36,10 @@ const EMPTY = {
   subscriptions: [],
   payouts: [],
   paymentLinks: [],
+  coupons: [],
+  webhooks: [],
+  webhookDeliveries: [],
+  notifications: [],
   sessions: [],
   events: [],
 };

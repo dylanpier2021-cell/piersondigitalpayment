@@ -40,6 +40,8 @@ router.post('/payment-links/:id/pay', (req, res) => {
   };
   const customer = { name: b.customerName, email: b.customerEmail };
 
+  const couponCode = b.couponCode || null;
+
   if (link.mode === 'subscription') {
     const result = billing.createSubscription({
       merchant,
@@ -50,6 +52,7 @@ router.post('/payment-links/:id/pay', (req, res) => {
       card,
       source: 'payment_link',
       paymentLinkId: link.id,
+      couponCode,
     });
     if (!result.ok) return res.status(402).json({ error: result.error });
     return res.json({
@@ -67,6 +70,7 @@ router.post('/payment-links/:id/pay', (req, res) => {
     card,
     source: 'payment_link',
     paymentLinkId: link.id,
+    couponCode,
   });
   if (!result.ok) return res.status(402).json({ error: result.error });
   res.json({ ok: true, mode: 'payment', receipt: receiptView(result.transaction, merchant, link) });
@@ -86,6 +90,16 @@ function receiptView(txn, merchant, link, subscription) {
     createdIso: txn.createdIso,
   };
 }
+
+/** Validate a discount code for a payment link's merchant (checkout feedback). */
+router.post('/coupon/validate', (req, res) => {
+  const coupons = require('../coupons');
+  const link = db.findById('paymentLinks', req.body && req.body.linkId);
+  if (!link) return res.status(404).json({ error: { message: 'Unknown link.' } });
+  const v = coupons.validate(req.body && req.body.code, link.merchantId);
+  if (!v.ok) return res.status(400).json({ error: { message: v.message } });
+  res.json({ ok: true, label: coupons.label(v.coupon) });
+});
 
 /** Test cards the sandbox accepts, surfaced on the checkout page as a hint. */
 router.get('/test-cards', (req, res) => {

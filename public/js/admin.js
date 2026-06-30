@@ -1,8 +1,9 @@
-/* Pierson Pay — admin / processor console */
+/* Transfado — admin / processor console */
 (function () {
   const {
     $, $$, el, money, centsFromDollars, pct, fmtDate, fmtDateTime, timeAgo, escapeHtml, brandIcon,
     api, requireRole, logout, toast, copyText, openModal, closeModal, modalShell, renderChart, emptyState,
+    t, topControls, countUp, brandMark, openPalette, setCommands,
   } = window.PP;
 
   let PLANS = [];
@@ -15,23 +16,24 @@
 
   function statusBadge(status) { return el('span', { class: 'badge ' + status, text: status.replace(/_/g, ' ') }); }
   const sum = (arr, f) => arr.reduce((s, x) => s + (x[f] || 0), 0);
-  function tile(label, value, color, sub) {
+  function tile(label, value, color, sub, count) {
+    const valNode = el('div', { class: 'stat-value countup ' + (color || ''), text: value });
+    if (count != null) countUp(valNode, count, (v) => money(Math.round(v)));
     return el('div', { class: 'stat ' + (color || '') }, [
-      el('div', { class: 'stat-label', text: label }),
-      el('div', { class: 'stat-value ' + (color || ''), text: value }),
+      el('div', { class: 'stat-label', text: label }), valNode,
       sub ? el('div', { class: 'stat-sub', text: sub }) : null,
     ]);
   }
   function rowKV(k, v, cls) { return el('div', { class: 'row-between' }, [el('span', { class: 'muted', text: k }), el('span', { class: cls || '', text: v })]); }
 
-  const PAGES = ['overview', 'clients', 'plans', 'transactions', 'settings'];
-  const TITLES = { overview: 'Processor Overview', clients: 'Clients', plans: 'Fee Plans', transactions: 'All Transactions', settings: 'Settings' };
+  const PAGES = ['overview', 'clients', 'plans', 'coupons', 'transactions', 'settings'];
+  const TITLE_KEY = { overview: 'admin.overview', clients: 'admin.clients', plans: 'admin.plans', coupons: 'admin.coupons', transactions: 'admin.transactions', settings: 'admin.settings' };
   function setPage(name) {
     if (!PAGES.includes(name)) name = 'overview';
     $$('.side-link[data-page]').forEach((a) => a.classList.toggle('active', a.dataset.page === name));
     $$('.page').forEach((p) => p.classList.remove('active'));
     $('#page-' + name).classList.add('active');
-    $('#page-title').textContent = TITLES[name];
+    $('#page-title').textContent = t(TITLE_KEY[name]);
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     RENDER[name]();
   }
@@ -44,35 +46,35 @@
     const m = data.metrics;
     host.innerHTML = '';
 
-    host.appendChild(el('div', { class: 'stat-grid' }, [
-      tile('Total volume', money(m.totalVolume), '', m.totalCharges + ' charges processed'),
-      tile('Your revenue', money(m.piersonRevenue), '', 'Fees charged to clients'),
-      tile('Your profit', money(m.piersonProfit), 'gold', 'Margin after processing cost'),
-      tile('Processing cost', money(m.processorCost), 'red', 'Your underlying cost'),
+    host.appendChild(el('div', { class: 'stat-grid stagger' }, [
+      tile(t('admin.totalVolume'), money(m.totalVolume), '', m.totalCharges + ' charges', m.totalVolume),
+      tile(t('admin.yourRevenue'), money(m.piersonRevenue), '', 'Fees charged to clients', m.piersonRevenue),
+      tile(t('admin.yourProfit'), money(m.piersonProfit), 'gold', 'Margin after cost', m.piersonProfit),
+      tile(t('admin.processingCost'), money(m.processorCost), 'red', 'Your underlying cost', m.processorCost),
     ]));
 
-    host.appendChild(el('div', { class: 'stat-grid mt16' }, [
-      tile('Profit MRR', money(m.piersonMrr), 'gold', 'Recurring margin / month'),
-      tile('Platform MRR', money(m.platformVolumeMrr), 'green', m.activeSubscriptions + ' active subscriptions'),
-      tile('Clients', String(m.totalMerchants), '', m.activeMerchants + ' active'),
-      tile('Owed to clients', money(m.payableBalance), '', 'Across all balances'),
+    host.appendChild(el('div', { class: 'stat-grid mt16 stagger' }, [
+      tile(t('admin.profitMrr'), money(m.piersonMrr), 'gold', 'Recurring margin / month', m.piersonMrr),
+      tile(t('admin.platformMrr'), money(m.platformVolumeMrr), 'green', m.activeSubscriptions + ' active subscriptions', m.platformVolumeMrr),
+      tile(t('admin.clients'), String(m.totalMerchants), '', m.activeMerchants + ' active'),
+      tile(t('admin.owedClients'), money(m.payableBalance), '', 'Across all balances', m.payableBalance),
     ]));
 
     const volChart = el('div', { class: 'card' }, [
-      el('div', { class: 'panel-title', text: 'Platform volume — last 30 days' }),
-      el('div', { html: renderChart(m.series, { field: 'volume', color: 'var(--blue-light)', fill: 'gVol' }) }),
+      el('div', { class: 'panel-title', text: t('admin.totalVolume') + ' — 30d' }),
+      el('div', { html: renderChart(m.series, { field: 'volume', color: 'var(--accent)', fill: 'gVol' }) }),
     ]);
     const marginChart = el('div', { class: 'card' }, [
-      el('div', { class: 'panel-title', text: 'Your profit — last 30 days' }),
+      el('div', { class: 'panel-title', text: t('admin.yourProfit') }),
       el('div', { html: renderChart(m.series, { field: 'margin', color: 'var(--gold)', fill: 'gMar' }) }),
     ]);
     host.appendChild(el('div', { class: 'grid-2 mt24' }, [volChart, marginChart]));
 
-    const topRows = m.topMerchants.map((t) => el('tr', {}, [
-      el('td', {}, [el('strong', { text: t.businessName })]),
-      el('td', { class: 'num', text: money(t.volume) }),
-      el('td', { class: 'num', html: '<span style="color:var(--gold)">' + money(t.margin) + '</span>' }),
-      el('td', { class: 'num small muted', text: t.count }),
+    const topRows = m.topMerchants.map((row) => el('tr', {}, [
+      el('td', {}, [el('strong', { text: row.businessName })]),
+      el('td', { class: 'num', text: money(row.volume) }),
+      el('td', { class: 'num', html: '<span style="color:var(--gold)">' + money(row.margin) + '</span>' }),
+      el('td', { class: 'num small muted', text: row.count }),
     ]));
     host.appendChild(el('div', { class: 'card mt24' }, [
       el('h3', { class: 'mb16', text: 'Top clients by volume' }),
@@ -143,6 +145,8 @@
     refreshMargin();
 
     const saveBtn = el('button', { class: 'btn btn-primary', text: 'Save fees' });
+    const couponInput = el('input', { type: 'text', value: c.appliedCoupon || '', placeholder: 'e.g. FREE (waives all fees)', style: 'text-transform:uppercase' });
+
     saveBtn.addEventListener('click', async () => {
       err.textContent = '';
       const override = {};
@@ -152,8 +156,8 @@
       if (ovCostFixed.value) override.costFixed = dollarsToCents(ovCostFixed.value);
       saveBtn.disabled = true; saveBtn.innerHTML = '<span class="spinner"></span>';
       try {
-        await api('/api/admin/merchants/' + id, { method: 'PATCH', body: { feePlanId: planSel.value, feeOverride: Object.keys(override).length ? override : null } });
-        toast('Fees updated for ' + c.businessName, 'success'); closeModal(); renderClients();
+        await api('/api/admin/merchants/' + id, { method: 'PATCH', body: { feePlanId: planSel.value, feeOverride: Object.keys(override).length ? override : null, appliedCoupon: couponInput.value.trim() || null } });
+        toast('Updated ' + c.businessName, 'success'); closeModal(); renderClients();
       } catch (ex) { err.textContent = ex.message; saveBtn.disabled = false; saveBtn.textContent = 'Save fees'; }
     });
 
@@ -176,6 +180,9 @@
       el('div', { class: 'field-row' }, [ovField('Client price %', ovPricePct), ovField('Client fixed', ovPriceFixed, '$')]),
       el('div', { class: 'field-row' }, [ovField('Your cost %', ovCostPct), ovField('Your cost fixed', ovCostFixed, '$')]),
       marginNote,
+      el('div', { class: 'panel-title mt24', text: 'Coupon' }),
+      el('div', { class: 'small muted mb8', text: c.couponLabel ? ('Active: ' + c.couponLabel) : 'Attach a code to discount or waive this client\'s fees.' }),
+      couponInput,
       err,
     ]);
 
@@ -327,16 +334,90 @@
     catch (ex) { toast(ex.message, 'error'); }
   }
 
-  const RENDER = { overview: renderOverview, clients: renderClients, plans: renderPlans, transactions: renderTransactions, settings: renderSettings };
+  // ============================ COUPONS ============================
+  async function renderCoupons() {
+    const host = $('#page-coupons');
+    host.innerHTML = '<div class="loading-block"><span class="spinner"></span></div>';
+    const { data } = await api('/api/admin/coupons');
+    host.innerHTML = '';
+    host.appendChild(el('div', { class: 'section-head' }, [
+      el('div', {}, [el('h2', { text: t('admin.coupons') }), el('p', { class: 'muted small', text: 'Discount or fully waive fees. FREE waives all fees.' })]),
+      el('button', { class: 'btn btn-primary', text: '+ ' + t('admin.newCoupon'), onclick: () => couponModal() }),
+    ]));
+    if (!data.length) { host.appendChild(el('div', { class: 'card' }, [emptyState('🏷️', 'No coupons yet')])); return; }
+    const rows = data.map((c) => el('tr', {}, [
+      el('td', {}, [el('strong', { class: 'mono', text: c.code })]),
+      el('td', {}, [el('span', { class: 'badge ' + (c.type === 'fee_waiver' ? 'active' : 'neutral') + ' plain', text: c.label })]),
+      el('td', { class: 'small muted', text: c.scope === 'merchant' ? (c.merchantName || 'merchant') : 'Platform-wide' }),
+      el('td', { class: 'num small', text: c.redemptions + (c.maxRedemptions ? ' / ' + c.maxRedemptions : '') }),
+      el('td', {}, [el('span', { class: 'badge ' + (c.live ? 'active' : 'canceled'), text: c.live ? 'Live' : 'Off' })]),
+      el('td', { class: 'num' }, [
+        el('button', { class: 'btn btn-ghost btn-sm', text: c.active ? 'Disable' : 'Enable', onclick: async () => { await api('/api/admin/coupons/' + c.id, { method: 'PATCH', body: { active: !c.active } }); renderCoupons(); } }),
+        el('button', { class: 'btn btn-danger btn-sm', style: 'margin-left:6px', text: '🗑', onclick: async () => { if (confirm('Delete coupon ' + c.code + '?')) { await api('/api/admin/coupons/' + c.id, { method: 'DELETE' }); renderCoupons(); } } }),
+      ]),
+    ]));
+    host.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data' }, [
+      el('thead', {}, [el('tr', {}, ['Code', 'Type', 'Scope', 'Redemptions', 'Status', ''].map((h, i) => el('th', { class: i === 3 || i === 5 ? 'num' : '', text: h })))]),
+      el('tbody', {}, rows),
+    ])]));
+  }
+
+  function couponModal() {
+    const code = el('input', { type: 'text', placeholder: 'FREE', style: 'text-transform:uppercase' });
+    const type = el('select', {}, [el('option', { value: 'fee_waiver', text: 'Fee waiver (0% — free)' }), el('option', { value: 'percent_off', text: '% off fees' }), el('option', { value: 'fixed_off', text: 'Fixed $ off fees' })]);
+    const value = el('input', { type: 'text', placeholder: '50' });
+    const valueRow = el('label', { class: 'field', style: 'display:none' }, [el('span', { id: 'vlabel', text: 'Percent off' }), value]);
+    const max = el('input', { type: 'number', placeholder: 'Unlimited', min: '1' });
+    const err = el('div', { class: 'form-error' });
+    type.addEventListener('change', () => {
+      const show = type.value !== 'fee_waiver';
+      valueRow.style.display = show ? 'block' : 'none';
+      $('#vlabel').textContent = type.value === 'percent_off' ? 'Percent off (1–100)' : 'Amount off (USD)';
+    });
+    const save = el('button', { class: 'btn btn-primary', text: 'Create coupon' });
+    save.addEventListener('click', async () => {
+      err.textContent = '';
+      const body = { code: code.value, type: type.value, scope: 'platform', maxRedemptions: max.value || null };
+      if (type.value === 'percent_off') body.value = Math.round((Number(value.value) || 0) * 100);
+      if (type.value === 'fixed_off') body.value = dollarsToCents(value.value);
+      try { await api('/api/admin/coupons', { method: 'POST', body }); closeModal(); toast('Coupon created ✓', 'success'); renderCoupons(); }
+      catch (ex) { err.textContent = ex.message; }
+    });
+    openModal(modalShell(t('admin.newCoupon'), [
+      el('label', { class: 'field' }, [el('span', { text: 'Code' }), code]),
+      el('label', { class: 'field' }, [el('span', { text: 'Type' }), type]),
+      valueRow,
+      el('label', { class: 'field' }, [el('span', { text: 'Max redemptions' }), max]),
+      err,
+    ], [el('button', { class: 'btn btn-ghost', text: t('common.cancel'), onclick: closeModal }), save]));
+  }
+
+  const RENDER = { overview: renderOverview, clients: renderClients, plans: renderPlans, coupons: renderCoupons, transactions: renderTransactions, settings: renderSettings };
+
+  function setupCommands() {
+    setCommands([
+      ...PAGES.map((p) => ({ label: t(TITLE_KEY[p]), icon: '→', hint: '↵', run: () => setPage(p) })),
+      { label: 'Run billing', icon: '▶', run: runBilling },
+      { label: 'Toggle theme', icon: '◐', run: () => window.PP.toggleTheme() },
+      { label: t('dash.signout'), icon: '→', run: logout },
+    ]);
+  }
 
   async function boot() {
     let s;
     try { s = await requireRole('admin'); } catch { return; }
-    $('#side-account').innerHTML = '<strong style="color:var(--off)">' + escapeHtml(s.user.name) + '</strong><br>' + escapeHtml(s.user.email);
+    await window.PP.ready;
+    $('#mark').innerHTML = brandMark();
+    $('#topctl').appendChild(topControls());
+    window.PP.applyI18n(document);
+    $('#side-account').innerHTML = '<strong style="color:var(--text)">' + escapeHtml(s.user.name) + '</strong><br>' + escapeHtml(s.user.email);
+    setupCommands();
     $$('.side-link[data-page]').forEach((a) => a.addEventListener('click', () => setPage(a.dataset.page)));
     $('#logout-btn').addEventListener('click', logout);
     $('#run-billing').addEventListener('click', runBilling);
+    $('#cmdk-btn').addEventListener('click', openPalette);
     window.addEventListener('hashchange', () => setPage(location.hash.slice(1)));
+    document.addEventListener('localechange', () => { window.PP.applyI18n(document); setupCommands(); setPage(location.hash.slice(1) || 'overview'); });
     setPage(location.hash.slice(1) || 'overview');
   }
   boot();

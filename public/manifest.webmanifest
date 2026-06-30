@@ -1,0 +1,13 @@
+{
+  "name": "Transfado",
+  "short_name": "Transfado",
+  "description": "The new way to get paid. A payment platform by Pierson Digital.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07090F",
+  "theme_color": "#1FE08A",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

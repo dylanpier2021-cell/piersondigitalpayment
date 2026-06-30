@@ -3,132 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pierson Pay — Your Own Payment Processor</title>
-<meta name="description" content="Pierson Pay is the payment platform by Pierson Digital. Accept cards, send payment links, run subscriptions, and set your own processing fees — for yourself and your clients.">
+<title>Transfado — The new way to get paid</title>
+<meta name="description" content="Transfado is the payment platform by Pierson Digital. Accept cards, send payment links, and bill subscriptions — at the lowest flat rate of any major processor. No monthly fee.">
+<script>try{var t=localStorage.getItem('tf_theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1FE08A">
+<meta property="og:title" content="Transfado — The new way to get paid">
+<meta property="og:description" content="Lower fees than every major processor. No monthly fee. No games.">
+<meta property="og:image" content="/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <style>
-  .nav { position: sticky; top: 0; z-index: 30; background: rgba(6,13,31,0.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-  .nav-inner { display:flex; align-items:center; justify-content: space-between; padding: 14px 0; }
-  .nav-links { display:flex; align-items:center; gap: 26px; }
-  .nav-links a { color: var(--off); font-weight: 600; font-size: 15px; }
-  .nav-links a:hover { color:#fff; }
-  .hero { position: relative; overflow: hidden; padding: 96px 0 80px; }
-  .hero::before { content:""; position:absolute; width:680px; height:680px; right:-200px; top:-260px; background: radial-gradient(circle, rgba(37,99,235,0.28), transparent 62%); pointer-events:none; }
-  .hero::after { content:""; position:absolute; width:520px; height:520px; left:-180px; bottom:-260px; background: radial-gradient(circle, rgba(74,222,128,0.16), transparent 62%); pointer-events:none; }
-  .eyebrow { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color: var(--blue-light); background: rgba(37,99,235,0.12); border:1px solid rgba(37,99,235,0.25); padding:6px 14px; border-radius:999px; }
-  .hero h1 { font-size: clamp(44px, 7vw, 78px); line-height: .98; margin: 22px 0 18px; max-width: 14ch; }
-  .hero h1 .grad { background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color: transparent; }
-  .hero p.lead { font-size: 20px; color: var(--off); max-width: 600px; margin-bottom: 30px; }
+  .nav { position: sticky; top:0; z-index:40; background: var(--glass); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); border-bottom:1px solid var(--border); }
+  .nav-inner { display:flex; align-items:center; justify-content:space-between; padding:13px 0; gap:16px; }
+  .nav-links { display:flex; align-items:center; gap:22px; }
+  .nav-links a { color: var(--text); font-weight:600; font-size:15px; }
+  .nav-links a.muted-link { color: var(--text-muted); }
+  .hero { position:relative; overflow:hidden; padding:104px 0 84px; }
+  .hero .aurora { z-index:0; }
+  .hero-inner { position:relative; z-index:2; }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:13px; letter-spacing:.04em; color: var(--accent); background: var(--accent-soft); border:1px solid var(--accent-ring); padding:6px 14px; border-radius:999px; }
+  .hero h1 { font-size: clamp(46px, 7.5vw, 86px); line-height:.97; margin:22px 0 18px; max-width:15ch; letter-spacing:-.035em; }
+  .hero p.lead { font-size:20px; color: var(--text-muted); max-width:600px; margin-bottom:30px; }
   .hero .btn-group { display:flex; gap:14px; flex-wrap:wrap; }
-  .trust { display:flex; gap: 30px; margin-top: 42px; flex-wrap: wrap; }
-  .trust div { font-size: 13.5px; color: var(--muted); display:flex; align-items:center; gap:8px; }
-  .trust b { color: var(--green-light); }
-  section.block { padding: 76px 0; }
-  .section-eyebrow { color: var(--gold); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:13px; }
-  .features { display:grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 38px; }
-  .feature { background: var(--navy2); border:1px solid var(--line); border-radius: var(--radius); padding: 26px; transition: transform .15s, border .15s; }
-  .feature:hover { transform: translateY(-4px); border-color: var(--line-strong); }
-  .feature .ic { width:46px; height:46px; border-radius:12px; background: rgba(37,99,235,0.14); display:grid; place-items:center; font-size:22px; margin-bottom:16px; }
-  .feature h3 { font-size: 21px; margin-bottom: 8px; }
-  .feature p { color: var(--muted); font-size: 15px; }
-  .split { display:grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items:center; }
-  .pricing-card { background: var(--navy2); border:1px solid var(--line-strong); border-radius: 18px; padding: 30px; box-shadow: var(--shadow-lg); }
-  .pricing-row { display:flex; justify-content:space-between; padding: 12px 0; border-bottom:1px solid var(--line); }
-  .pricing-row:last-child { border-bottom:none; }
-  .pricing-row .v { font-weight:700; color:#fff; font-family: var(--font-head); font-size: 18px; }
-  .pricing-row .v.gold { color: var(--gold); }
-  .steps { display:grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 40px; counter-reset: step; }
-  .step { position:relative; padding-left: 8px; }
-  .step .n { width:38px; height:38px; border-radius:50%; background: var(--grad-blue); color:#fff; display:grid; place-items:center; font-weight:800; font-family:var(--font-head); margin-bottom:14px; }
-  .step h4 { font-size:19px; margin-bottom:6px; }
-  .step p { color: var(--muted); font-size:14.5px; }
-  .cta-band { background: var(--grad-blue); border-radius: 22px; padding: 56px 40px; text-align:center; position:relative; overflow:hidden; }
-  .cta-band h2 { font-size: 40px; color:#fff; }
-  .cta-band p { color: rgba(255,255,255,0.85); font-size:18px; margin: 12px 0 26px; }
-  footer { border-top:1px solid var(--line); padding: 40px 0; color: var(--muted); font-size: 14px; }
+  .trust { display:flex; gap:28px; margin-top:42px; flex-wrap:wrap; }
+  .trust div { font-size:13.5px; color: var(--text-muted); display:flex; align-items:center; gap:7px; }
+  .trust b { color: var(--positive-text); }
+  section.block { padding:84px 0; position:relative; }
+  .eyebrow-text { color: var(--accent); font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:13px; }
+  .price-wrap { display:grid; grid-template-columns: 1.1fr 1fr; gap:44px; align-items:center; }
+  .rate-card { background: var(--surface); border:1px solid var(--border-strong); border-radius:22px; padding:34px; box-shadow: var(--shadow-lg); position:relative; overflow:hidden; }
+  .rate-card::before { content:""; position:absolute; inset:0; background: var(--grad-brand); opacity:.06; }
+  .rate-big { font-family: var(--font-display); font-weight:700; font-size:64px; letter-spacing:-.03em; line-height:1; }
+  .rate-big .g { background: var(--grad-brand); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .rate-meta { display:flex; gap:24px; margin-top:18px; flex-wrap:wrap; }
+  .rate-meta div b { display:block; font-size:22px; font-family:var(--font-display); }
+  .rate-meta div span { font-size:13px; color:var(--text-muted); }
+  /* comparison */
+  .bars { display:flex; flex-direction:column; gap:9px; }
+  .bar-row { display:grid; grid-template-columns: 130px 1fr 96px; align-items:center; gap:12px; font-size:14px; }
+  .bar-row .nm { color: var(--text-muted); font-weight:600; white-space:nowrap; }
+  .bar-track { height:30px; background: var(--surface-2); border-radius:8px; overflow:hidden; position:relative; }
+  .bar-fill { height:100%; width:0; background: var(--surface-3); border-radius:8px; transition: width 1.1s var(--ease); }
+  .bar-row.win .nm { color: var(--positive-text); font-weight:700; }
+  .bar-row.win .bar-fill { background: var(--grad-brand); }
+  .bar-amt { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color: var(--text); }
+  .bar-row.win .bar-amt { color: var(--positive-text); }
+  .ip-note { font-size:13px; color: var(--text-dim); margin-top:16px; }
+  /* calculator */
+  .calc { background: var(--surface); border:1px solid var(--border); border-radius:20px; padding:30px; }
+  .calc-result { background: var(--accent-soft); border:1px solid var(--accent-ring); border-radius:16px; padding:24px; text-align:center; margin-top:8px; }
+  .calc-save { font-family:var(--font-display); font-weight:700; font-size:54px; color: var(--positive-text); line-height:1; letter-spacing:-.02em; }
+  .vs-tabs { display:inline-flex; background: var(--bg-2); border:1px solid var(--border-strong); border-radius:11px; padding:3px; gap:3px; margin-bottom:6px; }
+  .vs-tabs button { background:transparent; border:none; color: var(--text-muted); font-family:var(--font-body); font-weight:600; font-size:13.5px; padding:7px 14px; border-radius:8px; cursor:pointer; }
+  .vs-tabs button.active { background: var(--accent); color: var(--accent-ink); }
+  .features { display:grid; grid-template-columns: repeat(3,1fr); gap:22px; margin-top:38px; }
+  .feature { background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:26px; transition: transform var(--t-med), border-color var(--t-med); }
+  .feature:hover { transform: translateY(-4px); border-color: var(--border-strong); }
+  .feature .ic { width:46px; height:46px; border-radius:13px; background: var(--accent-soft); display:grid; place-items:center; font-size:22px; margin-bottom:16px; }
+  .feature h3 { font-size:21px; margin-bottom:8px; }
+  .feature p { color: var(--text-muted); font-size:15px; }
+  .steps { display:grid; grid-template-columns: repeat(3,1fr); gap:24px; margin-top:40px; }
+  .step .n { width:38px; height:38px; border-radius:50%; background: var(--grad-brand); color: var(--accent-ink); display:grid; place-items:center; font-weight:700; font-family:var(--font-display); margin-bottom:14px; }
+  .step h4 { font-size:19px; margin-bottom:6px; } .step p { color: var(--text-muted); font-size:14.5px; }
+  .cta-band { background: var(--grad-brand); border-radius:26px; padding:60px 40px; text-align:center; position:relative; overflow:hidden; }
+  .cta-band h2 { font-size:42px; color: var(--accent-ink); }
+  .cta-band p { color: rgba(4,36,20,.78); font-size:18px; margin:12px 0 26px; }
+  footer { border-top:1px solid var(--border); padding:42px 0; color: var(--text-muted); font-size:14px; }
   .foot-inner { display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; }
-  @media (max-width: 860px){ .features,.steps{grid-template-columns:1fr;} .split{grid-template-columns:1fr;} .nav-links a:not(.btn){display:none;} }
+  @media (max-width:880px){ .features,.steps{grid-template-columns:1fr;} .price-wrap{grid-template-columns:1fr;} .nav-links a:not(.btn):not(.muted-link){display:none;} .bar-row{grid-template-columns:96px 1fr 78px;} }
 </style>
 </head>
 <body>
 
 <div class="nav">
   <div class="container nav-inner">
-    <a href="/" class="brand"><span class="brand-mark">P</span> Pierson<small>Pay</small></a>
+    <a href="/" class="brand"><span class="brand-mark" id="mark"></span> Trans<small>fado</small></a>
     <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="/docs">API</a>
-      <a href="/login">Sign in</a>
-      <a href="/signup" class="btn btn-primary btn-sm">Get started</a>
+      <a href="#pricing" class="muted-link" data-i18n="nav.pricing">Pricing</a>
+      <a href="#features" class="muted-link" data-i18n="nav.features">Features</a>
+      <a href="/docs" class="muted-link" data-i18n="nav.api">API</a>
+      <span id="topctl"></span>
+      <a href="/login" data-i18n="nav.signin">Sign in</a>
+      <a href="/signup" class="btn btn-primary btn-sm" data-i18n="nav.getstarted">Get started</a>
     </div>
   </div>
 </div>
 
 <header class="hero">
-  <div class="container">
-    <span class="eyebrow">⚡ By Pierson Digital</span>
-    <h1>Be your own <span class="grad">payment processor.</span></h1>
-    <p class="lead">Accept cards, share payment links, and bill subscriptions — and set <strong>your own fees</strong> on every transaction. Pierson Pay turns you into the processor for yourself and your clients.</p>
+  <div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+  <div class="container hero-inner">
+    <span class="eyebrow">⚡ <span data-i18n="landing.eyebrow">By Pierson Digital</span></span>
+    <h1><span data-i18n="landing.title1">The new way</span> <span class="grad-text" data-i18n="landing.title2">to get paid.</span></h1>
+    <p class="lead" data-i18n="landing.sub">Accept cards, send payment links, and bill subscriptions — at the lowest flat rate of any major processor. No monthly fee. No games.</p>
     <div class="btn-group">
-      <a href="/signup" class="btn btn-primary btn-lg">Open your account →</a>
-      <a href="/login" class="btn btn-ghost btn-lg">Sign in</a>
+      <a href="/signup" class="btn btn-primary btn-lg" data-i18n="landing.ctaOpen">Start getting paid →</a>
+      <a href="/login" class="btn btn-ghost btn-lg" data-i18n="landing.ctaSignin">Sign in</a>
     </div>
     <div class="trust">
-      <div>✓ <b>Set the markup</b> you keep</div>
-      <div>✓ <b>MRR</b> &amp; recurring billing</div>
-      <div>✓ <b>Payment links</b> in seconds</div>
-      <div>✓ <b>Developer API</b> included</div>
+      <div>✓ <b data-i18n="landing.trust1">Lowest flat rate</b></div>
+      <div>✓ <b data-i18n="landing.trust2">No monthly fee</b></div>
+      <div>✓ <b data-i18n="landing.trust3">Payment links & MRR</b></div>
+      <div>✓ <b data-i18n="landing.trust4">Developer API</b></div>
     </div>
   </div>
 </header>
 
+<!-- PRICING HOOK -->
+<section class="block" id="pricing" style="background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="container">
+    <div class="price-wrap">
+      <div>
+        <div class="eyebrow-text" data-i18n="landing.priceEyebrow">Cheaper than everyone</div>
+        <h2 style="font-size:42px;margin:12px 0 14px;letter-spacing:-.02em" data-i18n="landing.priceTitle">Lower fees than every major processor.</h2>
+        <p class="muted" style="font-size:18px" data-i18n="landing.priceSub">Same cards. Same payouts. You just keep more of every sale.</p>
+        <div class="rate-card mt24">
+          <div class="panel-title" data-i18n="landing.yourRate">Your Transfado rate</div>
+          <div class="rate-big"><span class="g">2.5%</span> + $0.10</div>
+          <div class="rate-meta">
+            <div><b style="color:var(--positive-text)">$0</b><span data-i18n="landing.perMonth">monthly fee</span></div>
+            <div><b>Instant</b><span>setup</span></div>
+            <div><b>No</b><span>contracts</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-title" data-i18n="landing.calcTitle">See what you'd save</div>
+        <div class="calc">
+          <label class="field"><span data-i18n="landing.calcLabel">Monthly volume</span>
+            <div class="input-group"><span class="input-prefix">$</span><input type="number" id="vol" value="25000" min="0" step="500"></div>
+          </label>
+          <label class="field"><span>Average transaction</span>
+            <div class="input-group"><span class="input-prefix">$</span><input type="number" id="avg" value="45" min="1" step="1"></div>
+          </label>
+          <div class="vs-tabs" id="vsTabs"></div>
+          <div class="calc-result">
+            <div class="small muted"><span data-i18n="landing.calcVs">You save vs.</span> <b id="vsName">Stripe</b></div>
+            <div class="calc-save" id="saveYear">$0</div>
+            <div class="small muted" data-i18n="landing.calcPerYear">per year</div>
+            <div class="small mt8" style="color:var(--text-muted)"><b id="saveMonth" style="color:var(--text)">$0</b> <span data-i18n="landing.calcPerMonth">per month</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison bars -->
+    <div class="card mt32" style="padding:28px">
+      <div class="row-between mb24"><div class="panel-title" style="margin:0">Cost per <span id="barBasis">$25,000</span>/mo — lower is better</div></div>
+      <div class="bars" id="bars"></div>
+      <div class="ip-note" id="ipNote"></div>
+      <div class="ip-note" data-i18n="landing.compareNote">Rates as published mid-2026; verify before launch.</div>
+    </div>
+  </div>
+</section>
+
 <section class="block" id="features">
   <div class="container">
-    <div class="section-eyebrow">Everything you need</div>
-    <h2 style="font-size:40px; margin-top:10px;">One platform. You hold the keys.</h2>
+    <div class="eyebrow-text" data-i18n="landing.featuresEyebrow">Everything you need</div>
+    <h2 style="font-size:40px;margin-top:12px" data-i18n="landing.featuresTitle">One platform. You hold the keys.</h2>
     <div class="features">
-      <div class="feature"><div class="ic">💳</div><h3>Accept payments</h3><p>Charge cards from a virtual terminal, hosted checkout, or the API. Instant approvals with a built-in sandbox.</p></div>
-      <div class="feature"><div class="ic">🔗</div><h3>Payment links</h3><p>Create a shareable link in seconds — one-time or recurring. Send it anywhere and get paid. Just like Stripe, but yours.</p></div>
-      <div class="feature"><div class="ic">🔁</div><h3>Subscriptions &amp; MRR</h3><p>Bill weekly, monthly, or yearly. Track MRR, active subscribers, and churn from one dashboard.</p></div>
-      <div class="feature"><div class="ic">🎚️</div><h3>Set your own fees</h3><p>Define your cost basis and what each client pays. Pierson Pay computes your margin on every single transaction.</p></div>
-      <div class="feature"><div class="ic">👥</div><h3>Onboard clients</h3><p>Give every client their own dashboard, payment links, and keys. You stay the processor behind it all.</p></div>
-      <div class="feature"><div class="ic">📊</div><h3>Real-time analytics</h3><p>Volume, revenue, your profit, payouts, and growth charts — updated as money moves.</p></div>
+      <div class="feature"><div class="ic">💳</div><h3 data-i18n="landing.f1t">Accept payments</h3><p data-i18n="landing.f1d">Charge cards from a terminal, hosted checkout, or the API.</p></div>
+      <div class="feature"><div class="ic">🔗</div><h3 data-i18n="landing.f2t">Payment links</h3><p data-i18n="landing.f2d">Create a shareable link in seconds — one-time or recurring.</p></div>
+      <div class="feature"><div class="ic">🔁</div><h3 data-i18n="landing.f3t">Subscriptions & MRR</h3><p data-i18n="landing.f3d">Bill weekly, monthly, or yearly. Track MRR and churn.</p></div>
+      <div class="feature"><div class="ic">🏷️</div><h3 data-i18n="landing.f4t">Lowest fees</h3><p data-i18n="landing.f4d">A simple flat rate that beats every major processor.</p></div>
+      <div class="feature"><div class="ic">👥</div><h3 data-i18n="landing.f5t">Onboard clients</h3><p data-i18n="landing.f5d">Give every client their own dashboard, links, and keys.</p></div>
+      <div class="feature"><div class="ic">📊</div><h3 data-i18n="landing.f6t">Real-time analytics</h3><p data-i18n="landing.f6d">Volume, revenue, profit, payouts, and growth charts.</p></div>
     </div>
   </div>
 </section>
 
-<section class="block" id="pricing" style="background:var(--navy2); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
-  <div class="container split">
-    <div>
-      <div class="section-eyebrow">You're in control</div>
-      <h2 style="font-size:38px; margin:10px 0 16px;">Your fee. Your margin.</h2>
-      <p class="muted" style="font-size:17px;">Pierson Pay separates what processing <em>costs</em> you from what you <em>charge</em>. The spread is your profit — on your own sales and on every client you onboard. Change it any time, per client.</p>
-      <a href="/signup" class="btn btn-gold btn-lg mt24">Start earning the spread →</a>
-    </div>
-    <div class="pricing-card">
-      <div class="panel-title">Example: a $100.00 charge</div>
-      <div class="pricing-row"><span>Customer pays</span><span class="v">$100.00</span></div>
-      <div class="pricing-row"><span>Your cost basis (2.90% + $0.30)</span><span class="v muted">−$3.20</span></div>
-      <div class="pricing-row"><span>Client is charged (3.50% + $0.35)</span><span class="v">$3.85</span></div>
-      <div class="pricing-row"><span>You keep (margin)</span><span class="v gold">+$0.65</span></div>
-      <div class="pricing-row"><span>Client receives</span><span class="v">$96.15</span></div>
-      <p class="help mt16">Every rate is yours to set — globally or per client.</p>
-    </div>
-  </div>
-</section>
-
-<section class="block">
+<section class="block" style="background:var(--bg-2);border-top:1px solid var(--border)">
   <div class="container">
-    <div class="section-eyebrow">Up and running fast</div>
-    <h2 style="font-size:38px; margin-top:10px;">How it works</h2>
+    <div class="eyebrow-text" data-i18n="landing.stepsEyebrow">Live in a minute</div>
+    <h2 style="font-size:40px;margin-top:12px" data-i18n="landing.stepsTitle">How it works</h2>
     <div class="steps">
-      <div class="step"><div class="n">1</div><h4>Create your account</h4><p>Sign up and you're live in the sandbox immediately — no contracts, no waiting.</p></div>
-      <div class="step"><div class="n">2</div><h4>Take a payment</h4><p>Use the terminal, drop a payment link, or call the API. Watch the fee split in real time.</p></div>
-      <div class="step"><div class="n">3</div><h4>Set fees &amp; onboard clients</h4><p>Tune your rates, add clients, and collect your margin on everything that flows through.</p></div>
+      <div class="step"><div class="n">1</div><h4 data-i18n="landing.s1t">Create your account</h4><p data-i18n="landing.s1d">Sign up and you're live in the sandbox instantly.</p></div>
+      <div class="step"><div class="n">2</div><h4 data-i18n="landing.s2t">Take a payment</h4><p data-i18n="landing.s2d">Use the terminal, drop a payment link, or call the API.</p></div>
+      <div class="step"><div class="n">3</div><h4 data-i18n="landing.s3t">Keep more</h4><p data-i18n="landing.s3d">Lower fees, no monthly cost — keep more of every sale.</p></div>
     </div>
   </div>
 </section>
@@ -136,9 +192,9 @@
 <section class="block">
   <div class="container">
     <div class="cta-band">
-      <h2>Ready to run your own payments?</h2>
-      <p>Open a Pierson Pay account and start processing in under a minute.</p>
-      <a href="/signup" class="btn btn-gold btn-lg">Get started free →</a>
+      <h2 data-i18n="landing.ctaTitle">Ready to get paid the new way?</h2>
+      <p data-i18n="landing.ctaSub">Open a Transfado account and start processing in under a minute.</p>
+      <a href="/signup" class="btn btn-ghost btn-lg" style="background:var(--accent-ink);color:var(--accent);border:none" data-i18n="landing.ctaBtn">Get started free →</a>
     </div>
   </div>
 </section>
@@ -146,16 +202,89 @@
 <footer>
   <div class="container foot-inner">
     <div>
-      <a href="/" class="brand" style="font-size:18px;"><span class="brand-mark" style="width:28px;height:28px;font-size:16px;">P</span> Pierson<small>Pay</small></a>
-      <p class="mt8 small">A product of Pierson Digital · piersondigitalmarketing.com</p>
+      <a href="/" class="brand" style="font-size:18px"><span class="brand-mark" id="mark2" style="width:28px;height:28px"></span> Trans<small>fado</small></a>
+      <p class="mt8 small" data-i18n="landing.footerTag">A product of Pierson Digital · piersondigitalmarketing.com</p>
     </div>
     <div class="small">
-      <a href="/login">Sign in</a> &nbsp;·&nbsp; <a href="/signup">Sign up</a> &nbsp;·&nbsp; <a href="/docs">Developers</a><br>
-      <a href="/legal/terms">Terms</a> &nbsp;·&nbsp; <a href="/legal/privacy">Privacy</a> &nbsp;·&nbsp; <a href="/legal/acceptable-use">Acceptable Use</a><br>
-      <span class="dim">Sandbox environment — no real cards are charged.</span>
+      <a href="/legal/terms">Terms</a> · <a href="/legal/privacy">Privacy</a> · <a href="/legal/acceptable-use">Acceptable Use</a> · <a href="/docs" data-i18n="nav.api">API</a><br>
+      <span class="dim" data-i18n="landing.footerSandbox">Sandbox environment — no real cards are charged.</span>
     </div>
   </div>
 </footer>
 
+<script src="/js/common.js"></script>
+<script>
+(function () {
+  const { $, el, money, brandMark, topControls, applyI18n, t } = window.PP;
+  $('#mark').innerHTML = brandMark(); $('#mark2').innerHTML = brandMark();
+
+  // Flat-rate comparable processors (no interchange-plus); Transfado wins.
+  const FLAT = [
+    { name: 'PayPal', pct: 3.49, fixed: 0.49 },
+    { name: 'Clover', pct: 3.5, fixed: 0.10 },
+    { name: 'Authorize.net', pct: 2.9, fixed: 0.30 },
+    { name: 'Stripe', pct: 2.9, fixed: 0.30 },
+    { name: 'Braintree', pct: 2.9, fixed: 0.30 },
+    { name: 'Shopify', pct: 2.9, fixed: 0.30 },
+    { name: 'Amazon Pay', pct: 2.9, fixed: 0.30 },
+    { name: 'Square', pct: 2.6, fixed: 0.10 },
+    { name: 'Transfado', pct: 2.5, fixed: 0.10, win: true },
+  ];
+  const VS = [
+    { name: 'Stripe', pct: 2.9, fixed: 0.30 },
+    { name: 'PayPal', pct: 3.49, fixed: 0.49 },
+    { name: 'Square', pct: 2.6, fixed: 0.10 },
+  ];
+  const TF = { pct: 2.5, fixed: 0.10 };
+  let vsIdx = 0;
+
+  const vol = $('#vol'), avg = $('#avg');
+  function feeFor(p, volume, count) { return volume * (p.pct / 100) + count * p.fixed; }
+
+  function renderBars() {
+    const volume = Math.max(0, Number(vol.value) || 0);
+    const count = Math.max(1, Math.round(volume / Math.max(1, Number(avg.value) || 45)));
+    $('#barBasis').textContent = money(volume * 100).replace(/\.00$/, '');
+    const rows = FLAT.map((p) => ({ ...p, fee: feeFor(p, volume, count) }));
+    const max = Math.max(...rows.map((r) => r.fee), 1);
+    const sorted = rows.sort((a, b) => b.fee - a.fee); // most expensive first
+    const host = $('#bars'); host.innerHTML = '';
+    sorted.forEach((r) => {
+      const row = el('div', { class: 'bar-row' + (r.win ? ' win' : '') }, [
+        el('div', { class: 'nm', text: r.name + (r.win ? ' ★' : '') }),
+        el('div', { class: 'bar-track' }, [el('div', { class: 'bar-fill' })]),
+        el('div', { class: 'bar-amt', text: money(Math.round(r.fee * 100)) }),
+      ]);
+      host.appendChild(row);
+      requestAnimationFrame(() => { row.querySelector('.bar-fill').style.width = Math.max(6, (r.fee / max) * 100) + '%'; });
+    });
+    $('#ipNote').textContent = 'Adyen and Helcim use interchange-plus pricing (variable, ~2.2%+); shown separately as they aren\'t a simple flat rate.';
+  }
+
+  function renderCalc() {
+    const volume = Math.max(0, Number(vol.value) || 0);
+    const count = Math.max(1, Math.round(volume / Math.max(1, Number(avg.value) || 45)));
+    const comp = VS[vsIdx];
+    const monthly = Math.max(0, feeFor(comp, volume, count) - feeFor(TF, volume, count));
+    $('#vsName').textContent = comp.name;
+    window.PP.countUp($('#saveYear'), monthly * 12 * 100, (v) => money(Math.round(v)));
+    $('#saveMonth').textContent = money(Math.round(monthly * 100));
+  }
+
+  function renderVsTabs() {
+    const host = $('#vsTabs'); host.innerHTML = '';
+    VS.forEach((c, i) => host.appendChild(el('button', { class: i === vsIdx ? 'active' : '', text: c.name, onclick: () => { vsIdx = i; renderVsTabs(); renderCalc(); } })));
+  }
+
+  [vol, avg].forEach((i) => i.addEventListener('input', () => { renderBars(); renderCalc(); }));
+
+  window.PP.ready.then(() => {
+    $('#topctl').appendChild(topControls());
+    applyI18n(document);
+    renderVsTabs(); renderBars(); renderCalc();
+  });
+  document.addEventListener('localechange', () => { applyI18n(document); renderBars(); renderCalc(); });
+})();
+</script>
 </body>
 </html>

@@ -6,7 +6,7 @@ const auth = require('./auth');
 const fees = require('./fees');
 const merchantsSvc = require('./merchants');
 const billing = require('./billing');
-const { prefixedId, now, iso } = require('./util');
+const { prefixedId, randomId, now, iso } = require('./util');
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -36,7 +36,8 @@ function randomCustomer() {
 
 /** Build a historical charge record directly (so we control the timestamp). */
 function makeHistoricalCharge(merchant, amount, createdAt, opts = {}) {
-  const q = fees.quote(amount, merchant, db.collection('feePlans'));
+  const coupon = require('./coupons').activeForMerchant(merchant);
+  const q = fees.quote(amount, merchant, db.collection('feePlans'), coupon);
   const card = choice(CARD_BRANDS);
   const customer = opts.customer || randomCustomer();
   const status = opts.status || 'succeeded';
@@ -66,6 +67,8 @@ function makeHistoricalCharge(merchant, amount, createdAt, opts = {}) {
     source: opts.source || choice(['terminal', 'checkout', 'api', 'payment_link']),
     subscriptionId: opts.subscriptionId || null,
     paymentLinkId: opts.paymentLinkId || null,
+    coupon: q.couponApplied || null,
+    couponWaived: !!q.couponWaived,
     metadata: {},
     createdAt,
     createdIso: iso(createdAt),
@@ -88,6 +91,7 @@ function buildMerchant(def, ts) {
     currency: 'usd',
     status: def.status || 'active',
     payoutMethod: def.payoutMethod || null,
+    appliedCoupon: def.appliedCoupon || null,
     publishableKey: keys.publishableKey,
     secretKey: keys.secretKey,
     createdAt: ts,
@@ -113,11 +117,13 @@ function seed() {
   fresh.meta.createdAt = iso();
   db.replaceAll(fresh);
 
-  // ---- Fee plans (cost basis vs. client price = Pierson's margin) ----
+  // ---- Fee plans (cost basis vs. client price = platform margin) ----
+  // Public flat rate is 2.5% + $0.10, beating every major processor.
+  // Cost basis sits near interchange (~1.8% + $0.08) so margin stays positive.
   const plans = [
-    { name: 'Pierson Standard', description: 'Default plan for new clients.', costPct: 290, costFixed: 30, pricePct: 350, priceFixed: 35 },
-    { name: 'Pierson Plus', description: 'Higher-volume clients.', costPct: 270, costFixed: 25, pricePct: 320, priceFixed: 30 },
-    { name: 'Pierson Nonprofit', description: 'Discounted rate for nonprofits.', costPct: 220, costFixed: 30, pricePct: 250, priceFixed: 30 },
+    { name: 'Transfado Flat', description: 'The public flat rate — lower than everyone.', costPct: 180, costFixed: 8, pricePct: 250, priceFixed: 10 },
+    { name: 'Transfado Plus', description: 'Higher-volume clients.', costPct: 170, costFixed: 7, pricePct: 230, priceFixed: 10 },
+    { name: 'Transfado Nonprofit', description: 'Discounted rate for nonprofits.', costPct: 160, costFixed: 8, pricePct: 200, priceFixed: 10 },
   ].map((p) => {
     const ts = now();
     const plan = { id: prefixedId('plan', 12), object: 'fee_plan', ...p, createdAt: ts, createdIso: iso(ts) };
@@ -127,7 +133,7 @@ function seed() {
 
   const settings = db.getData().meta.settings;
   settings.defaultFeePlanId = plans[0].id;
-  settings.platformName = 'Pierson Pay';
+  settings.platformName = 'Transfado';
   db.save();
 
   // ---- Admin (Pierson Digital) ----
@@ -142,14 +148,25 @@ function seed() {
     createdAt: now(),
   });
 
+  // ---- Coupons (incl. a built-in FREE fee-waiver) ----
+  const couponDefs = [
+    { code: 'FREE', type: 'fee_waiver', value: 0, maxRedemptions: null, redemptions: 1 },
+    { code: 'LAUNCH50', type: 'percent_off', value: 5000, maxRedemptions: 500, redemptions: 37 },
+    { code: 'SAVE10', type: 'fixed_off', value: 10, maxRedemptions: null, redemptions: 12 },
+  ];
+  couponDefs.forEach((c) => {
+    const ts = now();
+    db.insert('coupons', { id: prefixedId('cpn', 14), object: 'coupon', code: c.code, type: c.type, value: c.value, scope: 'platform', merchantId: null, maxRedemptions: c.maxRedemptions, redemptions: c.redemptions, expiresAt: null, active: true, createdAt: ts, createdIso: iso(ts) });
+  });
+
   // ---- Sample clients (each with a demo payout method) ----
   const bank = (name, last4, holder) => ({ type: 'bank', bankName: name, last4, routing: '110000000', holderName: holder, label: `${name} ••${last4}` });
   const debit = (brand, last4, holder) => ({ type: 'card', brand, last4, expMonth: 8, expYear: 2031, holderName: holder, label: `${brand[0].toUpperCase() + brand.slice(1)} debit ••${last4}` });
   const merchantDefs = [
     { businessName: "Boochie's Slots & Video Poker", email: 'boochies@example.com', password: 'demo1234', contactName: 'Boochie', website: 'boochiesplace.com', feePlanId: plans[1].id, payoutMethod: debit('visa', '4242', 'Boochie') },
-    { businessName: 'KEI Events', email: 'aricka@example.com', password: 'demo1234', contactName: 'Aricka Dean', website: 'kei-events.com', feePlanId: plans[0].id, feeOverride: { pricePct: 360, priceFixed: 40 }, payoutMethod: bank('Chase', '8842', 'Aricka Dean') },
+    { businessName: 'KEI Events', email: 'aricka@example.com', password: 'demo1234', contactName: 'Aricka Dean', website: 'kei-events.com', feePlanId: plans[0].id, feeOverride: { pricePct: 270, priceFixed: 15 }, payoutMethod: bank('Chase', '8842', 'Aricka Dean') },
     { businessName: "Jermaine's Home Services", email: 'jermaine@example.com', password: 'demo1234', contactName: 'Jermaine', feePlanId: plans[0].id, payoutMethod: bank('Bank of America', '5511', 'Jermaine') },
-    { businessName: 'The Gloss Spot', email: 'gloss@example.com', password: 'demo1234', contactName: 'Front Desk', feePlanId: plans[0].id, payoutMethod: debit('mastercard', '4444', 'The Gloss Spot') },
+    { businessName: 'The Gloss Spot', email: 'gloss@example.com', password: 'demo1234', contactName: 'Front Desk', feePlanId: plans[0].id, appliedCoupon: 'FREE', payoutMethod: debit('mastercard', '4444', 'The Gloss Spot') },
     { businessName: 'MAD Landscaping', email: 'mad@example.com', password: 'demo1234', contactName: 'Owner', feePlanId: plans[1].id, payoutMethod: bank('Wells Fargo', '2093', 'MAD Landscaping') },
   ];
 
@@ -262,6 +279,28 @@ function seed() {
       createdIso: iso(now()),
     });
 
+    // A webhook endpoint + recent deliveries (for the Developers tab).
+    if (Math.random() < 0.75) {
+      const wid = prefixedId('we', 14);
+      const host = (merchant.website || 'example.com').replace(/^https?:\/\//, '');
+      db.insert('webhooks', { id: wid, object: 'webhook_endpoint', merchantId: merchant.id, url: `https://${host}/webhooks/transfado`, secret: 'whsec_' + randomId(28), enabledEvents: ['*'], active: true, createdAt: now() - randInt(5, 40) * DAY, createdIso: iso(now()) });
+      for (let i = 0; i < randInt(4, 9); i++) {
+        const ty = choice(['charge.succeeded', 'charge.succeeded', 'charge.refunded', 'subscription.created', 'payout.created']);
+        const ok = Math.random() < 0.9;
+        const when = now() - randInt(0, 18) * DAY - randInt(0, DAY);
+        db.insert('webhookDeliveries', { id: prefixedId('whd', 14), object: 'webhook_delivery', webhookId: wid, merchantId: merchant.id, eventId: prefixedId('evt', 18), type: ty, url: `https://${host}/webhooks/transfado`, statusCode: ok ? 200 : 500, success: ok, signatureHeader: `t=${Math.floor(when / 1000)},v1=${randomId(12)}`, payload: '{}', createdAt: when, createdIso: iso(when) });
+      }
+    }
+
+    // A few notifications.
+    for (let i = 0; i < randInt(3, 6); i++) {
+      const ty = choice(['payment_received', 'payment_received', 'payout_sent', 'subscription_renewed']);
+      const amt = choice([4500, 12000, 2900, 25000, 7700]);
+      const title = ty === 'payout_sent' ? 'Payout sent' : ty === 'subscription_renewed' ? 'Subscription renewed' : 'Payment received';
+      const when = now() - randInt(0, 14) * DAY - randInt(0, DAY);
+      db.insert('notifications', { id: prefixedId('ntf', 14), object: 'notification', merchantId: merchant.id, type: ty, title, body: `$${(amt / 100).toFixed(2)} ${ty === 'payout_sent' ? 'to your bank' : ty === 'subscription_renewed' ? 'membership renewed' : 'from a customer'}`, emailedTo: null, read: i > 1, data: {}, createdAt: when, createdIso: iso(when) });
+    }
+
     // A past payout, then set the current available balance.
     if (balance > 20000) {
       const payoutAmount = Math.round(balance * 0.5);
@@ -297,6 +336,9 @@ function summary() {
     subscriptions: d.subscriptions.length,
     paymentLinks: d.paymentLinks.length,
     payouts: d.payouts.length,
+    coupons: d.coupons.length,
+    webhooks: d.webhooks.length,
+    notifications: d.notifications.length,
   };
 }
 
@@ -320,7 +362,8 @@ if (require.main === module) {
     process.exit(0);
   }
   const result = seed();
-  console.log('Seeded Pierson Pay sandbox:', JSON.stringify(result, null, 2));
+  console.log('Seeded Transfado sandbox:', JSON.stringify(result, null, 2));
   console.log(`\nAdmin login:  ${config.ADMIN_EMAIL} / ${config.ADMIN_PASSWORD}`);
   console.log('Client login: boochies@example.com / demo1234 (and 4 more)');
+  console.log('Coupon: FREE waives all fees · LAUNCH50 = 50% off · SAVE10 = $0.10 off');
 }

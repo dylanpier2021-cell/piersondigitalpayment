@@ -1,10 +1,10 @@
-# Pierson Pay — Compliance & Gap Analysis
+# Transfado — Compliance & Gap Analysis
 
-> **Honest self-assessment.** Pierson Pay is a complete, working **sandbox** payment platform — but a real, money-moving payment processor/facilitator carries legal, financial, and security obligations that software alone does not satisfy. This document lists what's built, what a production processor also has, and what you must put in place before touching real money. **None of this is legal advice — engage a fintech attorney and a sponsoring bank/PayFac partner before going live.**
+> **Honest self-assessment.** Transfado is a complete, working **sandbox** payment platform — but a real, money-moving payment processor/facilitator carries legal, financial, and security obligations that software alone does not satisfy. This document lists what's built, what a production processor also has, and what you must put in place before touching real money. **None of this is legal advice — engage a fintech attorney and a sponsoring bank/PayFac partner before going live.**
 
 ---
 
-## ✅ What Pierson Pay already does
+## ✅ What Transfado already does
 
 - Card charges, refunds (full/partial), and a virtual terminal
 - Hosted checkout + shareable **payment links** (one-time and subscription)

@@ -1,8 +1,8 @@
-# Pierson Pay
+# Transfado
 
-**Your own payment processor.** A Stripe-style payment platform by [Pierson Digital](https://piersondigitalmarketing.com) where **you are the processor** — you set your own cost basis and what each client pays, and the platform computes your margin on every transaction.
+**The new way to get paid.** A payment platform by [Pierson Digital](https://piersondigitalmarketing.com) where **you are the processor** — you set your own cost basis and what each client pays, and the platform computes your margin on every transaction.
 
-It does what Stripe does — card payments, hosted checkout, **payment links**, **subscriptions with MRR**, payouts, and a developer API — except *you* own the fee schedule, for yourself and for the clients you onboard.
+It does what the big processors do — card payments, hosted checkout, **payment links**, **subscriptions with MRR**, payouts, **coupons/fee-waivers**, webhooks, and a developer API — at **the lowest flat rate of any major processor** (2.5% + $0.10, no monthly fee), and *you* own the fee schedule for yourself and the clients you onboard.
 
 ---
 
@@ -13,9 +13,7 @@ npm install
 npm start
 ```
 
-Then open **http://localhost:4242**.
-
-The database auto-seeds on first run with demo data (5 sample clients, ~230 transactions, active subscriptions for MRR, payment links, payouts).
+Open **http://localhost:4242**. The database auto-seeds on first run with rich demo data (5 clients, ~230 transactions, subscriptions, payment links, coupons, webhooks, notifications, payouts).
 
 ### Logins
 
@@ -24,141 +22,81 @@ The database auto-seeds on first run with demo data (5 sample clients, ~230 tran
 | **Processor (you)** | `owner@piersondigitalmarketing.com` | `pierson123` |
 | Client | `boochies@example.com` | `demo1234` |
 
-There are five demo clients — `boochies@`, `aricka@`, `jermaine@`, `gloss@`, `mad@` (all `@example.com`, password `demo1234`). Or just create a new client account at **/signup**.
-
-### Reset the data
+Five demo clients: `boochies@`, `aricka@`, `jermaine@`, `gloss@` (fees waived via `FREE`), `mad@` — all `@example.com` / `demo1234`. Or create a client at **/signup**.
 
 ```bash
-npm run seed     # wipes data/db.json and reseeds fresh demo data
+npm run seed     # wipe + reseed demo data
+npm test         # run the full suite (api + coupons + DOM render) on an isolated port
 ```
 
 ---
 
-## What you get
+## What's new in 2.0
 
-### For you (the processor) — `/admin`
-- **Platform overview**: total volume, your revenue (fees charged), **your profit** (margin after cost), processing cost, profit MRR, platform MRR, amount owed to clients.
-- **Clients**: every merchant processing through you, with their plan, what they pay, your margin, volume, and your profit. Click any client to edit their fees or suspend them.
-- **Fee plans**: define a **cost basis** (what processing costs you) and a **client price** (what they pay). The spread is your profit. Set a default and assign plans per client.
-- **Per-client fee overrides**: tune any client's rate individually; margin recalculates live.
-- **Transactions**: every charge across all clients, with your profit per transaction.
-- **Recurring billing**: subscriptions auto-bill on a ticker; run a cycle manually any time.
-
-### For your clients — `/dashboard`
-- **Overview**: available balance, MRR, 30-day volume, fees paid, volume chart, recent activity.
-- **Payments**: a **virtual terminal** to charge a card (with a live fee preview), full transaction history, one-click **refunds**.
-- **Payment Links**: create shareable checkout links — **one-time or recurring** — copy the URL, enable/disable, track payments. Just like Stripe.
-- **Subscriptions**: start recurring plans (weekly/monthly/yearly), see MRR and next billing date, cancel anytime.
-- **Payouts**: add a **payout method** (debit card or bank account) and withdraw the available balance to it (simulated), with history.
-- **Developers**: publishable + secret API keys (roll them), with a copy-paste cURL example.
-- **Settings**: business profile, statement descriptor, and a view of their rate.
-
-### Hosted checkout — `/pay/:linkId`
-A clean, Stripe-like checkout page customers land on from a payment link. Handles one-time payments and subscriptions, custom ("pay what you want") amounts, and shows a receipt.
+- 🎨 **Full Transfado rebrand** + a premium design system, **light / dark themes** (toggle in the top bar & Settings, remembers your choice), animated **aurora** backgrounds, film-grain, glassmorphism, **count-up** numbers, draw-on charts, skeleton shimmer, **⌘K command palette**, and a spring-confetti success on checkout.
+- 🌍 **Internationalization** — English, Spanish, French, German, Portuguese, live-switchable and persisted; numbers/dates/currency localized via `Intl`. Hosted checkout honors `?lang=`. Add a language by dropping one JSON file in `public/locales/`.
+- 💸 **Pricing hook** — a home-page comparison that shows Transfado beating every major flat-rate processor, plus an **interactive savings calculator** (enter your volume → see what you save vs Stripe/PayPal/Square).
+- 🏷️ **Coupons / fee-waivers** — discount or **fully waive** fees (`FREE` = 0% + $0). Apply per-client (admin), redeemed by a merchant, or entered at checkout. The fee engine, balances, MRR, and profit all stay correct when fees are zeroed.
+- 🔌 **Processor-parity features**: webhooks (signed events + delivery log + test-send), in-app notifications + simulated receipts, transaction **search/filter**, **CSV export**, **QR codes** on payment links, and a payout method (debit card / bank) per merchant.
+- 📲 **PWA** (installable, offline fallback), favicon, OG/social image, and a service worker.
 
 ---
 
-## The fee model (the whole point)
+## Core features
+
+**For you (the processor) — `/admin`**
+Platform overview (volume, **your revenue**, **your profit**, processing cost, profit MRR, platform MRR), clients with their plan/margin/volume, fee-plan management, **per-client fee overrides + coupons**, suspend/reactivate, a coupon manager, all transactions, and a recurring-billing runner.
+
+**For your clients — `/dashboard`**
+Overview with balance/MRR/volume/fees + chart, a **virtual terminal** with live fee preview, transactions (search, filter, CSV), one-click refunds, **payment links** (one-time or recurring, with QR), **subscriptions**, **payouts** to a saved debit card or bank, **webhooks**, **notifications**, coupon redemption, API keys, and settings (incl. theme + language).
+
+**Hosted checkout — `/pay/:linkId`** — branded, aurora, optional discount code, confetti on success, `?lang=` aware.
+
+---
+
+## The fee model
 
 Every fee plan carries **two** rate pairs:
 
 ```
-cost  = costPct  + costFixed    →  what processing "costs" you
-price = pricePct + priceFixed   →  what the client is charged
+cost  = costPct  + costFixed    →  what processing costs you  (~1.8% + $0.08 default)
+price = pricePct + priceFixed   →  what the client is charged  (2.5% + $0.10 public rate)
 ```
 
-On a charge of `amount`:
-
-```
-merchantFee   = price applied to amount    (deducted from the client)
-processorCost = cost  applied to amount    (your underlying cost)
-yourMargin    = merchantFee − processorCost  (your profit)
-clientNet     = amount − merchantFee         (what the client keeps)
-```
-
-**Example — a $100.00 charge on "Pierson Standard" (cost 2.9%+$0.30, price 3.5%+$0.35):**
-
-| | |
-|---|---|
-| Customer pays | $100.00 |
-| Client is charged (price) | $3.85 |
-| Your cost (cost basis) | $3.20 |
-| **Your profit (margin)** | **$0.65** |
-| Client receives | $96.15 |
+Per charge: `merchantFee` (charged to the client) − `processorCost` (your cost) = **your margin**; `merchantNet = amount − merchantFee` goes to the client. A `FREE` coupon sets fee, cost, and margin to 0, so the client keeps 100%.
 
 ---
 
 ## Developer API
 
-Stripe-style REST API under `/v1`, authenticated with a Bearer secret key. Full reference at **/docs**. All amounts are integer **cents**.
+Stripe-style REST under `/v1`, Bearer secret key, integer **cents**. Full reference at **/docs**.
 
 ```bash
 curl http://localhost:4242/v1/charges \
-  -H "Authorization: Bearer sk_sandbox_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"amount":2500,"description":"Order #1234",
-       "card":{"number":"4242424242424242","exp_month":12,"exp_year":2030,"cvc":"123"}}'
+  -H "Authorization: Bearer sk_sandbox_xxx" -H "Content-Type: application/json" \
+  -d '{"amount":2500,"card":{"number":"4242424242424242","exp_month":12,"exp_year":2030,"cvc":"123"}}'
 ```
 
-Endpoints: `POST/GET /v1/charges`, `POST /v1/refunds`, `POST/GET /v1/subscriptions`, `POST /v1/subscriptions/:id/cancel`, `POST/GET /v1/payment_links`, `GET /v1/balance`, `GET /v1/account`.
-
-### Test cards (sandbox)
-
-| Card | Result |
-|------|--------|
-| `4242 4242 4242 4242` | Visa — approves |
-| `5555 5555 5555 4444` | Mastercard — approves |
-| `3782 822463 10005` | Amex — approves |
-| `4000 0000 0000 0002` | Declined (generic) |
-| `4000 0000 0000 9995` | Declined (insufficient funds) |
-
-Any future expiry, any 3-digit CVC (4 for Amex).
+`POST/GET /v1/charges`, `POST /v1/refunds`, `POST/GET /v1/subscriptions`, `POST/GET /v1/payment_links`, `GET /v1/balance`, `GET /v1/account`. Test cards: `4242…` approves, `4000 0000 0000 0002` declines (any future expiry, any CVC).
 
 ---
-
-## Legal & compliance
-
-- **Legal pages** at `/legal` — Terms of Service, Privacy Policy, and an Acceptable Use Policy (prohibited businesses / AML) with operator-protective disclaimers (sandbox notice, not-a-bank, no-warranty, limitation of liability, indemnification). Linked from the landing footer, checkout, dashboards, and a required consent checkbox at signup.
-- **[COMPLIANCE.md](COMPLIANCE.md)** — an honest gap analysis of what a production processor needs that this MVP doesn't yet (real settlement, disputes/chargebacks, PCI tokenization, KYC/KYB, OFAC screening, webhooks, idempotency, licensing, 1099-K, etc.) plus a go-live checklist.
-
-> ⚠️ The legal pages are **templates, not legal advice** — have a licensed attorney review and adapt them before any real, commercial, or money-handling use.
 
 ## Architecture
 
 ```
-server/
-  index.js        Express app, routes, clean URLs, recurring-billing ticker
-  config.js       Loads .env (zero-dependency)
-  db.js           File-backed JSON store (atomic writes) — swap for SQL later
-  auth.js         Sessions (bcrypt + cookies), API-key auth, route guards
-  fees.js         The fee engine (cost vs. price → margin)
-  cards.js        Simulated card network (Luhn + test cards) — swap for a real acquirer
-  charges.js      Create / refund charges; credit balances
-  billing.js      Subscriptions, recurring re-bills, MRR analytics
-  merchants.js    Merchant + API-key creation, event log
-  links.js        Payment links
-  metrics.js      Platform & merchant analytics (volume, profit, time series)
-  seed.js         Demo data
-  routes/         auth, merchant, admin, public (checkout), api (/v1)
-public/           Brand CSS + vanilla-JS pages (no build step)
-data/db.json      Runtime database (git-ignored; delete to reset)
+server/   index.js · config · db (JSON store) · auth · fees (coupon-aware engine) ·
+          cards (simulated network) · charges · billing (subs/MRR) · coupons ·
+          webhooks · notifications · merchants · links · metrics · seed · routes/
+public/   css/app.css (design tokens + themes) · js/common.js (i18n, theme, charts,
+          palette, confetti, count-up) · js/dashboard.js · js/admin.js ·
+          locales/{en,es,fr,de,pt}.json · *.html · legal/ · favicon/icon/manifest/sw
+tests/    run.js (isolated port+DB) · api.test · coupon.test · render.test
 ```
 
-**Stack:** Node + Express + a tiny JSON datastore. Three pure-JS dependencies (`express`, `bcryptjs`, `cookie-parser`) — no native builds, no build step, runs anywhere Node 18+ runs.
-
-### Configuration (`.env`, optional)
-
-Copy `.env.example` to `.env`. Override `PORT`, `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
+**Stack:** Node + Express + a file-backed JSON datastore. Three runtime deps (`express`, `bcryptjs`, `cookie-parser`) — no native builds, no build step. Vanilla-JS frontend with CDN libs (qrcode) loaded on demand.
 
 ---
 
-## Going live with real money
+## Legal & going live
 
-Pierson Pay ships in **sandbox mode** — it simulates the card network so the entire product works end-to-end with no external accounts. The seams to connect real money movement are isolated:
-
-1. **Card processing** — replace `server/cards.js` with a real acquirer / processor integration (e.g. an issuing-and-acquiring partner, or Stripe Connect where you are the platform taking an `application_fee`). `charges.js` already produces the exact fee split a platform model needs.
-2. **Payouts** — wire `server/routes/merchant.js` payouts to real bank transfers (ACH/RTP) via your banking partner.
-3. **Persistence** — swap `server/db.js` for Postgres/SQLite (the route handlers only use `insert/find/update/remove`).
-4. **Compliance** — operating as a real payment facilitator requires PCI DSS scope, KYC/onboarding, and a sponsoring acquirer or PayFac partner. Those are business/legal steps, not code.
-
-Until then, no real cards are charged and no real funds move.
+Legal pages at **/legal** (Terms, Privacy, Acceptable Use) and a gap analysis in **[COMPLIANCE.md](COMPLIANCE.md)**. Transfado ships in **sandbox mode** — no real cards are charged, no real funds move. Going live requires connecting a real acquirer/processor (swap `server/cards.js`), real payout rails, PCI tokenization, KYC/AML, and a sponsoring bank/PayFac — business/legal steps documented in COMPLIANCE.md. **The legal docs are templates, not legal advice — have an attorney review before any real use.**

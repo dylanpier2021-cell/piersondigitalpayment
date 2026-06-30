@@ -100,7 +100,8 @@ if (ticker.unref) ticker.unref();
 const server = app.listen(config.PORT, () => {
   console.log('');
   console.log('  ╔════════════════════════════════════════════════╗');
-  console.log('  ║   Pierson Pay  —  payment platform (sandbox)   ║');
+  console.log('  ║   Transfado  —  the new way to get paid        ║');
+  console.log('  ║   sandbox · a product of Pierson Digital        ║');
   console.log('  ╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`  ▸ App:        http://localhost:${config.PORT}`);

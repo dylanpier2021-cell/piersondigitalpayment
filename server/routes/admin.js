@@ -10,6 +10,7 @@ const charges = require('../charges');
 const billing = require('../billing');
 const metrics = require('../metrics');
 const merchantsSvc = require('../merchants');
+const coupons = require('../coupons');
 const { prefixedId, now, iso } = require('../util');
 
 router.use(auth.requireAdmin);
@@ -40,12 +41,14 @@ function merchantRow(m) {
     volume += c.amount - (c.amountRefunded || 0);
     if (c.fees) margin += c.fees.piersonMargin;
   }
+  const activeCoupon = coupons.activeForMerchant(m);
   return {
     ...merchantsSvc.publicMerchant(m),
     secretKey: m.secretKey,
     balance: m.balance,
     feePlanId: m.feePlanId,
     feeOverride: m.feeOverride || null,
+    couponLabel: activeCoupon ? coupons.label(activeCoupon) : null,
     rates: rateDetail(m),
     mrr: billing.merchantMrr(m.id),
     volume,
@@ -117,6 +120,18 @@ router.patch('/merchants/:id', (req, res) => {
         }
       }
       patch.feeOverride = Object.keys(o).length ? o : null;
+    }
+  }
+
+  // Attach or detach a coupon for this client.
+  if (b.appliedCoupon !== undefined) {
+    if (!b.appliedCoupon) {
+      patch.appliedCoupon = null;
+    } else {
+      const v = coupons.validate(b.appliedCoupon, m.id);
+      if (!v.ok) return res.status(400).json({ error: { message: v.message } });
+      patch.appliedCoupon = v.coupon.code;
+      if (m.appliedCoupon !== v.coupon.code) coupons.claim(v.coupon);
     }
   }
 
@@ -200,7 +215,7 @@ router.delete('/fee-plans/:id', (req, res) => {
 router.patch('/settings', (req, res) => {
   const settings = db.getData().meta.settings;
   const b = req.body || {};
-  if (b.platformName !== undefined) settings.platformName = String(b.platformName).trim() || 'Pierson Pay';
+  if (b.platformName !== undefined) settings.platformName = String(b.platformName).trim() || 'Transfado';
   if (b.defaultFeePlanId !== undefined) {
     if (b.defaultFeePlanId && !db.findById('feePlans', b.defaultFeePlanId)) {
       return res.status(400).json({ error: { message: 'Unknown fee plan.' } });
@@ -239,6 +254,46 @@ router.get('/events', (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
   const list = db.collection('events').slice().sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
   res.json({ data: list });
+});
+
+// ---- Coupons ------------------------------------------------------------
+
+router.get('/coupons', (req, res) => {
+  const data = db.collection('coupons').slice().sort((a, b) => b.createdAt - a.createdAt).map((c) => {
+    const m = c.merchantId ? db.findById('merchants', c.merchantId) : null;
+    return { ...coupons.couponView(c), label: coupons.label(c), merchantName: m ? m.businessName : null };
+  });
+  res.json({ data });
+});
+
+router.post('/coupons', (req, res) => {
+  try {
+    const coupon = coupons.createCoupon(req.body || {});
+    merchantsSvc.logEvent('coupon.created', { code: coupon.code, type: coupon.type });
+    res.json({ ok: true, coupon: { ...coupons.couponView(coupon), label: coupons.label(coupon) } });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: { message: err.message } });
+  }
+});
+
+router.patch('/coupons/:id', (req, res) => {
+  const c = db.findById('coupons', req.params.id);
+  if (!c) return res.status(404).json({ error: { message: 'Coupon not found.' } });
+  const patch = {};
+  if (req.body.active !== undefined) patch.active = !!req.body.active;
+  if (req.body.maxRedemptions !== undefined) patch.maxRedemptions = req.body.maxRedemptions === '' || req.body.maxRedemptions == null ? null : Math.max(1, Math.round(Number(req.body.maxRedemptions)));
+  if (req.body.expiresAt !== undefined) patch.expiresAt = req.body.expiresAt ? Number(req.body.expiresAt) : null;
+  db.update('coupons', c.id, patch);
+  res.json({ ok: true, coupon: { ...coupons.couponView(db.findById('coupons', c.id)), label: coupons.label(db.findById('coupons', c.id)) } });
+});
+
+router.delete('/coupons/:id', (req, res) => {
+  const c = db.findById('coupons', req.params.id);
+  if (!c) return res.status(404).json({ error: { message: 'Coupon not found.' } });
+  // Detach from any merchants currently using it.
+  db.find('merchants', (m) => m.appliedCoupon === c.code).forEach((m) => db.update('merchants', m.id, { appliedCoupon: null }));
+  db.remove('coupons', c.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

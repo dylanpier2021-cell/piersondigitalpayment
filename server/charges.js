@@ -3,7 +3,7 @@
 const db = require('./db');
 const fees = require('./fees');
 const cards = require('./cards');
-const { prefixedId, now, iso } = require('./util');
+const { prefixedId, now, iso, formatMoney } = require('./util');
 const { logEvent } = require('./merchants');
 
 const MIN_AMOUNT = 50; // $0.50, matching Stripe's minimum.
@@ -29,6 +29,7 @@ function createCharge(opts) {
     paymentLinkId = null,
     metadata = {},
     saved = false,
+    couponCode = null,
   } = opts;
 
   if (!merchant) return { ok: false, error: { code: 'no_merchant', message: 'Merchant is required.' } };
@@ -41,8 +42,19 @@ function createCharge(opts) {
     };
   }
 
+  // Resolve an applicable coupon: an explicit one-off code (checkout) takes
+  // precedence, otherwise fall back to the merchant's attached coupon.
+  const coupons = require('./coupons');
+  let coupon = null;
+  let oneOff = false;
+  if (couponCode) {
+    const v = coupons.validate(couponCode, merchant.id);
+    if (v.ok) { coupon = v.coupon; oneOff = true; }
+  }
+  if (!coupon) coupon = coupons.activeForMerchant(merchant);
+
   const feePlans = db.collection('feePlans');
-  const q = fees.quote(amount, merchant, feePlans);
+  const q = fees.quote(amount, merchant, feePlans, coupon);
 
   const auth = cards.authorize(card || {}, amount, { saved });
   const ts = now();
@@ -106,6 +118,8 @@ function createCharge(opts) {
     source,
     subscriptionId,
     paymentLinkId,
+    coupon: q.couponApplied || null,
+    couponWaived: !!q.couponWaived,
     metadata,
     createdAt: ts,
     createdIso: iso(ts),
@@ -113,12 +127,20 @@ function createCharge(opts) {
 
   db.insert('transactions', txn);
   db.update('merchants', merchant.id, { balance: (merchant.balance || 0) + q.merchantNet });
+  if (oneOff && coupon) coupons.claim(coupon);
   logEvent('charge.succeeded', {
     chargeId: txn.id,
     merchantId: merchant.id,
     amount,
     margin: q.piersonMargin,
   });
+  // Notification + webhook (best-effort; never block the charge).
+  try {
+    require('./notifications').notify(merchant.id, 'payment_received', 'Payment received',
+      `${formatMoney(amount)} from ${customer.name || customer.email || 'a customer'}`,
+      { email: customer.email, data: { chargeId: txn.id } });
+    require('./webhooks').dispatch(merchant.id, 'charge.succeeded', chargeView(txn));
+  } catch (e) { /* non-fatal */ }
 
   return { ok: true, transaction: txn };
 }
@@ -156,6 +178,7 @@ function refundCharge(txnId, refundCents) {
   const status = newRefunded >= txn.amount ? 'refunded' : 'partially_refunded';
   db.update('transactions', txn.id, { amountRefunded: newRefunded, status });
   logEvent('charge.refunded', { chargeId: txn.id, merchantId: txn.merchantId, amount });
+  try { require('./webhooks').dispatch(txn.merchantId, 'charge.refunded', chargeView(db.findById('transactions', txn.id))); } catch (e) {}
 
   return { ok: true, transaction: db.findById('transactions', txn.id) };
 }
@@ -181,6 +204,8 @@ function chargeView(txn) {
     source: txn.source,
     subscription: txn.subscriptionId || null,
     payment_link: txn.paymentLinkId || null,
+    coupon: txn.coupon || null,
+    coupon_waived: !!txn.couponWaived,
     metadata: txn.metadata || {},
     created: Math.floor(txn.createdAt / 1000),
     created_iso: txn.createdIso,

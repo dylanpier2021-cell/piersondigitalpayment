@@ -45,6 +45,7 @@ function createSubscription(opts) {
     source = 'api',
     paymentLinkId = null,
     metadata = {},
+    couponCode = null,
   } = opts;
 
   if (!merchant) return { ok: false, error: { code: 'no_merchant', message: 'Merchant is required.' } };
@@ -70,6 +71,7 @@ function createSubscription(opts) {
     subscriptionId: subId,
     paymentLinkId,
     metadata,
+    couponCode,
   });
   if (!first.ok) {
     return { ok: false, error: first.error };
@@ -105,6 +107,7 @@ function createSubscription(opts) {
   };
   db.insert('subscriptions', subscription);
   logEvent('subscription.created', { subscriptionId: subId, merchantId: merchant.id, amount, interval });
+  try { require('./webhooks').dispatch(merchant.id, 'subscription.created', subscriptionView(subscription)); } catch (e) {}
 
   return { ok: true, subscription, transaction: first.transaction };
 }
@@ -164,6 +167,10 @@ function processDueSubscriptions(at = now()) {
         failed++;
         db.update('subscriptions', sub.id, { status: 'past_due' });
         logEvent('subscription.payment_failed', { subscriptionId: sub.id, merchantId: sub.merchantId });
+        try {
+          require('./notifications').notify(sub.merchantId, 'payment_failed', 'Subscription payment failed', `${sub.productName} — card declined`, { email: sub.customer.email, data: { subscriptionId: sub.id } });
+          require('./webhooks').dispatch(sub.merchantId, 'subscription.payment_failed', subscriptionView(db.findById('subscriptions', sub.id)));
+        } catch (e) {}
         break; // stop retrying this sub on this pass
       }
     }

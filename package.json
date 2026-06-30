@@ -1,17 +1,19 @@
 {
-  "name": "pierson-pay",
-  "version": "1.0.0",
-  "description": "Pierson Pay — a payment-processing platform where Pierson Digital is the processor and sets its own cost basis and client pricing on every transaction.",
+  "name": "transfado",
+  "version": "2.0.0",
+  "description": "Transfado — the new way to get paid. A payment platform by Pierson Digital where you are the processor and set your own cost basis and client pricing on every transaction.",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "seed": "node server/seed.js --force"
+    "seed": "node server/seed.js --force",
+    "test": "node tests/run.js"
   },
   "keywords": [
     "payments",
     "payment-processor",
     "payment-facilitator",
+    "transfado",
     "pierson-digital",
     "fintech"
   ],
@@ -25,5 +27,8 @@
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
   }
 }

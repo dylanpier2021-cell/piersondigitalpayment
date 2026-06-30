@@ -6,12 +6,12 @@ const { prefixedId, randomId, now, iso } = require('./util');
 
 /** Build a statement descriptor (<=22 chars, like card networks require). */
 function makeDescriptor(businessName) {
-  const base = String(businessName || 'PIERSON PAY')
+  const base = String(businessName || 'TRANSFADO')
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  return (base || 'PIERSON PAY').slice(0, 22);
+  return (base || 'TRANSFADO').slice(0, 22);
 }
 
 function generateKeys(mode = 'sandbox') {
@@ -65,6 +65,7 @@ function createMerchant({ businessName, email, password, contactName, feePlanId,
     currency: 'usd',
     status: 'active', // active | suspended
     payoutMethod: null, // where payouts go (debit card or bank account)
+    appliedCoupon: null, // attached coupon code that discounts/waives fees
     publishableKey: keys.publishableKey,
     secretKey: keys.secretKey,
     createdAt: ts,
@@ -116,6 +117,7 @@ function publicMerchant(m) {
     publishableKey: m.publishableKey,
     currency: m.currency,
     payoutMethod: m.payoutMethod || null,
+    appliedCoupon: m.appliedCoupon || null,
     createdAt: m.createdAt,
   };
 }

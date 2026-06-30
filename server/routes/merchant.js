@@ -10,9 +10,12 @@ const charges = require('../charges');
 const billing = require('../billing');
 const links = require('../links');
 const cards = require('../cards');
+const coupons = require('../coupons');
+const notifications = require('../notifications');
+const webhooks = require('../webhooks');
 const merchantsSvc = require('../merchants');
 const metrics = require('../metrics');
-const { prefixedId, now, iso } = require('../util');
+const { prefixedId, now, iso, formatMoney } = require('../util');
 
 const BRAND_LABEL = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', discover: 'Discover', unknown: 'Card' };
 
@@ -67,11 +70,14 @@ router.use(auth.requireMerchant);
 
 function resolvedRates(merchant) {
   const r = fees.resolveRates(merchant, db.collection('feePlans'));
+  const coupon = coupons.activeForMerchant(merchant);
+  const waived = !!(coupon && coupon.type === 'fee_waiver');
   return {
     planName: r.planName,
     isCustom: r.isCustom,
     price: { pct: r.rates.pricePct, fixed: r.rates.priceFixed, label: fees.describeRate(r.rates.pricePct, r.rates.priceFixed) },
-    // Merchants see what they pay; cost basis/margin stays internal to Pierson.
+    coupon: coupon ? { code: coupon.code, label: coupons.label(coupon), waived } : null,
+    // Merchants see what they pay; cost basis/margin stays internal to the platform.
   };
 }
 
@@ -97,14 +103,54 @@ router.get('/fees', (req, res) => {
 
 // ---- Transactions -------------------------------------------------------
 
+function filterTransactions(merchantId, q) {
+  const text = String(q.q || '').toLowerCase().trim();
+  const status = q.status && q.status !== 'all' ? q.status : null;
+  const source = q.source && q.source !== 'all' ? q.source : null;
+  const from = q.from ? Date.parse(q.from) : null;
+  const to = q.to ? Date.parse(q.to) + 86400000 : null; // inclusive day
+  return db
+    .find('transactions', (t) => t.merchantId === merchantId)
+    .filter((t) => {
+      if (status && t.status !== status) return false;
+      if (source && t.source !== source) return false;
+      if (from && t.createdAt < from) return false;
+      if (to && t.createdAt >= to) return false;
+      if (text) {
+        const hay = `${t.description || ''} ${t.customer && t.customer.email || ''} ${t.customer && t.customer.name || ''} ${t.id} ${t.card && t.card.last4 || ''}`.toLowerCase();
+        if (!hay.includes(text)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
 router.get('/transactions', (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 100, 500);
-  const list = db
-    .find('transactions', (t) => t.merchantId === req.merchant.id)
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, limit)
-    .map(charges.chargeView);
+  const limit = Math.min(Number(req.query.limit) || 200, 1000);
+  const list = filterTransactions(req.merchant.id, req.query).slice(0, limit).map(charges.chargeView);
   res.json({ data: list });
+});
+
+function csv(rows) {
+  const esc = (v) => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  return rows.map((r) => r.map(esc).join(',')).join('\r\n');
+}
+
+router.get('/transactions.csv', (req, res) => {
+  const rows = [['id', 'date', 'amount', 'currency', 'status', 'fee', 'net', 'description', 'customer_email', 'card_brand', 'card_last4', 'source']];
+  filterTransactions(req.merchant.id, req.query).forEach((t) => rows.push([
+    t.id, t.createdIso, (t.amount / 100).toFixed(2), t.currency, t.status,
+    t.fees ? (t.fees.merchantFee / 100).toFixed(2) : '', t.fees ? (t.fees.merchantNet / 100).toFixed(2) : '',
+    t.description || '', t.customer && t.customer.email || '', t.card && t.card.brand || '', t.card && t.card.last4 || '', t.source,
+  ]));
+  res.type('text/csv').set('Content-Disposition', 'attachment; filename="transactions.csv"').send(csv(rows));
+});
+
+router.get('/payouts.csv', (req, res) => {
+  const rows = [['id', 'date', 'amount', 'currency', 'status', 'method', 'destination']];
+  db.find('payouts', (p) => p.merchantId === req.merchant.id).sort((a, b) => b.createdAt - a.createdAt)
+    .forEach((p) => rows.push([p.id, p.createdIso, (p.amount / 100).toFixed(2), p.currency, p.status, p.method, p.destination]));
+  res.type('text/csv').set('Content-Disposition', 'attachment; filename="payouts.csv"').send(csv(rows));
 });
 
 router.get('/transactions/:id', (req, res) => {
@@ -274,6 +320,8 @@ router.post('/payouts', (req, res) => {
   db.insert('payouts', payout);
   db.update('merchants', req.merchant.id, { balance: newBalance });
   merchantsSvc.logEvent('payout.created', { payoutId: payout.id, merchantId: req.merchant.id, amount });
+  notifications.notify(req.merchant.id, 'payout_sent', 'Payout sent', `${formatMoney(amount)} to ${payout.destination}`, { data: { payoutId: payout.id } });
+  try { webhooks.dispatch(req.merchant.id, 'payout.created', payout); } catch (e) {}
   res.json({ ok: true, payout, balance: newBalance });
 });
 
@@ -302,6 +350,60 @@ router.patch('/settings', (req, res) => {
   }
   db.update('merchants', req.merchant.id, patch);
   res.json({ ok: true, merchant: merchantsSvc.publicMerchant(db.findById('merchants', req.merchant.id)) });
+});
+
+// ---- Coupons ------------------------------------------------------------
+
+router.post('/coupons/redeem', (req, res) => {
+  const code = req.body && req.body.code;
+  const v = coupons.validate(code, req.merchant.id);
+  if (!v.ok) return res.status(400).json({ error: { message: v.message } });
+  if (req.merchant.appliedCoupon !== v.coupon.code) coupons.claim(v.coupon);
+  db.update('merchants', req.merchant.id, { appliedCoupon: v.coupon.code });
+  res.json({ ok: true, coupon: { code: v.coupon.code, label: coupons.label(v.coupon) }, rates: resolvedRates(db.findById('merchants', req.merchant.id)) });
+});
+
+router.delete('/coupons', (req, res) => {
+  db.update('merchants', req.merchant.id, { appliedCoupon: null });
+  res.json({ ok: true });
+});
+
+// ---- Notifications ------------------------------------------------------
+
+router.get('/notifications', (req, res) => {
+  res.json({ data: notifications.list(req.merchant.id, 60), unread: notifications.unreadCount(req.merchant.id) });
+});
+router.post('/notifications/read', (req, res) => {
+  notifications.markAllRead(req.merchant.id);
+  res.json({ ok: true });
+});
+
+// ---- Webhooks -----------------------------------------------------------
+
+router.get('/webhooks', (req, res) => {
+  res.json({
+    data: db.find('webhooks', (w) => w.merchantId === req.merchant.id).map(webhooks.endpointView),
+    deliveries: webhooks.deliveries(req.merchant.id, 30),
+    eventTypes: webhooks.EVENT_TYPES,
+  });
+});
+router.post('/webhooks', (req, res) => {
+  const url = String(req.body && req.body.url || '').trim();
+  if (!/^https?:\/\/.+/.test(url)) return res.status(400).json({ error: { message: 'Enter a valid URL.' } });
+  const ep = webhooks.createEndpoint(req.merchant.id, url, req.body && req.body.events);
+  res.json({ ok: true, endpoint: webhooks.endpointView(ep) });
+});
+router.post('/webhooks/:id/test', (req, res) => {
+  const ep = db.findById('webhooks', req.params.id);
+  if (!ep || ep.merchantId !== req.merchant.id) return res.status(404).json({ error: { message: 'Not found.' } });
+  const d = webhooks.recordDelivery(ep, 'charge.succeeded', { id: 'ch_test_123', object: 'charge', amount: 2500, currency: 'usd', status: 'succeeded' });
+  res.json({ ok: true, delivery: d });
+});
+router.delete('/webhooks/:id', (req, res) => {
+  const ep = db.findById('webhooks', req.params.id);
+  if (!ep || ep.merchantId !== req.merchant.id) return res.status(404).json({ error: { message: 'Not found.' } });
+  db.remove('webhooks', ep.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

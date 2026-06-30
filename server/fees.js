@@ -3,7 +3,7 @@
 const { bpsOf, clamp } = require('./util');
 
 /**
- * The fee engine. This is the heart of Pierson Pay.
+ * The fee engine. This is the heart of Transfado.
  *
  * Every fee plan carries TWO rate pairs:
  *
@@ -57,33 +57,45 @@ function resolveRates(merchant, feePlans) {
 
 /**
  * Compute the full fee breakdown for an amount (in cents) given resolved rates.
- * Never lets the merchant fee exceed the charged amount.
+ * Never lets the merchant fee exceed the charged amount. An optional `coupon`
+ * (see coupons.js) can discount or fully waive the fee.
  */
-function computeFees(amountCents, rates) {
+function computeFees(amountCents, rates, coupon) {
   const amount = Math.max(0, Math.round(amountCents));
 
   const rawMerchantFee = bpsOf(amount, rates.pricePct) + rates.priceFixed;
-  const merchantFee = clamp(rawMerchantFee, 0, amount);
+  let merchantFee = clamp(rawMerchantFee, 0, amount);
+  let processorCost = bpsOf(amount, rates.costPct) + rates.costFixed;
+  let couponWaived = false;
 
-  const processorCost = bpsOf(amount, rates.costPct) + rates.costFixed;
+  if (coupon) {
+    // Lazy require to avoid a circular dependency.
+    const adjusted = require('./coupons').applyToFee(merchantFee, processorCost, coupon);
+    merchantFee = adjusted.merchantFee;
+    processorCost = adjusted.processorCost;
+    couponWaived = adjusted.waived;
+  }
+
   const piersonMargin = merchantFee - processorCost;
   const merchantNet = amount - merchantFee;
 
   return {
     amount,
-    merchantFee, // charged to the client by Pierson
-    processorCost, // Pierson's cost of processing
-    piersonMargin, // Pierson's profit on this transaction
+    merchantFee, // charged to the client by the platform
+    processorCost, // platform's cost of processing
+    piersonMargin, // platform's profit on this transaction
     merchantNet, // what the client receives
+    couponApplied: coupon ? coupon.code : null,
+    couponWaived,
   };
 }
 
 /**
- * Convenience: resolve + compute in one call.
+ * Convenience: resolve + compute in one call. Pass a `coupon` to apply a discount.
  */
-function quote(amountCents, merchant, feePlans) {
+function quote(amountCents, merchant, feePlans, coupon) {
   const resolved = resolveRates(merchant, feePlans);
-  const breakdown = computeFees(amountCents, resolved.rates);
+  const breakdown = computeFees(amountCents, resolved.rates, coupon);
   return { ...breakdown, rates: resolved.rates, pricing: resolved };
 }
 

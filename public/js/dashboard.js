@@ -1,8 +1,9 @@
-/* Pierson Pay — merchant dashboard */
+/* Transfado — merchant dashboard */
 (function () {
   const {
     $, $$, el, money, centsFromDollars, pct, fmtDate, fmtDateTime, timeAgo, escapeHtml, brandIcon,
     api, requireRole, logout, toast, copyText, openModal, closeModal, modalShell, renderChart, emptyState,
+    t, topControls, countUp, qrCanvas, skeleton, openPalette, setCommands, brandMark,
   } = window.PP;
 
   const STATE = { session: null, merchant: null, rates: null };
@@ -44,6 +45,7 @@
   function feePreview(amountCents) {
     const p = STATE.rates && STATE.rates.price;
     if (!p || !Number.isFinite(amountCents) || amountCents <= 0) return null;
+    if (STATE.rates.coupon && STATE.rates.coupon.waived) return { fee: 0, net: amountCents, waived: true };
     const fee = Math.round((amountCents * p.pct) / 10000) + p.fixed;
     const net = amountCents - Math.min(fee, amountCents);
     return { fee: Math.min(fee, amountCents), net };
@@ -55,14 +57,13 @@
 
   // ============================ NAV / ROUTER ============================
   const PAGES = ['overview', 'payments', 'links', 'subscriptions', 'payouts', 'developers', 'settings'];
-  const TITLES = { overview: 'Overview', payments: 'Payments', links: 'Payment Links', subscriptions: 'Subscriptions', payouts: 'Payouts', developers: 'Developers', settings: 'Settings' };
 
   function setPage(name) {
     if (!PAGES.includes(name)) name = 'overview';
     $$('.side-link[data-page]').forEach((a) => a.classList.toggle('active', a.dataset.page === name));
     $$('.page').forEach((p) => p.classList.remove('active'));
     $('#page-' + name).classList.add('active');
-    $('#page-title').textContent = TITLES[name];
+    $('#page-title').textContent = t('dash.' + name);
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     RENDER[name]();
   }
@@ -70,36 +71,42 @@
   // ============================ OVERVIEW ============================
   async function renderOverview() {
     const host = $('#page-overview');
+    host.innerHTML = ''; host.appendChild(el('div', { class: 'stat-grid' }, [skeleton(2), skeleton(2), skeleton(2), skeleton(2)]));
     const data = await api('/api/merchant/overview');
     STATE.rates = data.rates;
     const m = data.metrics;
     host.innerHTML = '';
 
-    const stats = el('div', { class: 'stat-grid' }, [
-      tile('Available balance', money(m.balance), 'green', 'Ready to pay out'),
-      tile('MRR', money(m.mrr), 'gold', m.activeSubscriptions + ' active subscription' + (m.activeSubscriptions === 1 ? '' : 's')),
-      tile('Volume (30d)', money(sum(m.series, 'volume')), '', m.chargeCount + ' lifetime charges'),
-      tile('Fees paid', money(m.feesPaid), 'red', 'Your processing rate: ' + (data.rates.price ? data.rates.price.label : '—')),
+    const waived = data.rates.coupon && data.rates.coupon.waived;
+    const feeSub = waived ? t('coupon.feesWaived') : t('dash.yourRate', { rate: data.rates.price ? data.rates.price.label : '—' });
+    const stats = el('div', { class: 'stat-grid stagger' }, [
+      tile(t('dash.availableBalance'), money(m.balance), 'green', t('dash.readyPayout'), m.balance),
+      tile(t('dash.mrr'), money(m.mrr), 'gold', t('dash.activeSubs', { n: m.activeSubscriptions }), m.mrr),
+      tile(t('dash.volume30'), money(sum(m.series, 'volume')), '', m.chargeCount + ' charges', sum(m.series, 'volume')),
+      tile(waived ? t('dash.feesWaived') : t('dash.feesPaid'), money(m.feesPaid), waived ? 'green' : 'red', feeSub, m.feesPaid),
     ]);
 
     const chartCard = el('div', { class: 'card' }, [
-      el('div', { class: 'row-between mb16' }, [el('div', { class: 'panel-title', text: 'Payment volume — last 30 days', style: 'margin:0' }), el('div', { class: 'small muted', text: money(sum(m.series, 'volume')) + ' processed' })]),
-      el('div', { html: renderChart(m.series, { field: 'volume', color: 'var(--blue-light)' }) }),
+      el('div', { class: 'row-between mb16' }, [el('div', { class: 'panel-title', text: t('dash.volume30'), style: 'margin:0' }), el('div', { class: 'small muted', text: money(sum(m.series, 'volume')) })]),
+      el('div', { html: renderChart(m.series, { field: 'volume', color: 'var(--accent)' }) }),
     ]);
 
     const recent = el('div', { class: 'card' }, [
-      el('div', { class: 'row-between mb16' }, [el('h3', { text: 'Recent activity' }), el('a', { class: 'small', href: '#payments', text: 'View all →', onclick: () => setPage('payments') })]),
-      data.recentTransactions.length ? txnTable(data.recentTransactions.slice(0, 8), false) : emptyState('💳', 'No payments yet', 'Take your first payment from the Payments tab.'),
+      el('div', { class: 'row-between mb16' }, [el('h3', { text: t('dash.recentActivity') }), el('a', { class: 'small', href: '#payments', text: t('common.viewall') + ' →', onclick: () => setPage('payments') })]),
+      data.recentTransactions.length ? txnTable(data.recentTransactions.slice(0, 8), false) : emptyState('💳', 'No payments yet'),
     ]);
 
+    if (waived) host.appendChild(el('div', { class: 'card mb24', style: 'border-color:var(--accent-ring);background:var(--accent-soft)' }, [el('div', { class: 'row gap8', style: 'align-items:center' }, [el('span', { class: 'badge active', text: t('coupon.feesWaived') }), el('span', { class: 'small', text: 'Code ' }), el('strong', { class: 'mono', text: data.rates.coupon.code }), el('span', { class: 'small muted', text: '— you keep 100% of every sale.' })])]));
     host.appendChild(stats);
     host.appendChild(el('div', { class: 'grid-side mt24' }, [chartCard, recent]));
   }
 
-  function tile(label, value, color, sub) {
+  function tile(label, value, color, sub, count) {
+    const valNode = el('div', { class: 'stat-value countup ' + (color || ''), text: value });
+    if (count != null) countUp(valNode, count, (v) => money(Math.round(v)));
     return el('div', { class: 'stat ' + (color || '') }, [
       el('div', { class: 'stat-label', text: label }),
-      el('div', { class: 'stat-value ' + (color || ''), text: value }),
+      valNode,
       sub ? el('div', { class: 'stat-sub', text: sub }) : null,
     ]);
   }
@@ -168,12 +175,35 @@
       payBtn,
     ]);
 
+    // Search + filter + CSV export
+    const search = el('input', { type: 'search', placeholder: t('common.search') + '…', style: 'max-width:240px' });
+    const statusSel = el('select', { style: 'max-width:150px' }, [
+      el('option', { value: 'all', text: t('common.all') }),
+      el('option', { value: 'succeeded', text: 'Succeeded' }),
+      el('option', { value: 'failed', text: 'Failed' }),
+      el('option', { value: 'refunded', text: 'Refunded' }),
+    ]);
+    const results = el('div', {});
+    let debounce;
+    async function loadTxns() {
+      const qs = new URLSearchParams({ q: search.value, status: statusSel.value, limit: '300' }).toString();
+      results.innerHTML = '<div class="loading-block"><span class="spinner"></span></div>';
+      const { data } = await api('/api/merchant/transactions?' + qs);
+      results.innerHTML = '';
+      results.appendChild(el('div', { class: 'small muted mb16', text: data.length + ' result' + (data.length === 1 ? '' : 's') }));
+      results.appendChild(data.length ? txnTable(data, true) : emptyState('🧾', 'No transactions match'));
+    }
+    search.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(loadTxns, 250); });
+    statusSel.addEventListener('change', loadTxns);
+    const csvBtn = el('a', { class: 'btn btn-ghost btn-sm', href: '/api/merchant/transactions.csv', text: '↓ ' + t('common.export') });
+
     const tableCard = el('div', { class: 'card' }, [
-      el('div', { class: 'row-between mb16' }, [el('h3', { text: 'Transactions' }), el('span', { class: 'small muted', text: txns.length + ' total' })]),
-      txns.length ? txnTable(txns, true) : emptyState('🧾', 'No transactions yet'),
+      el('div', { class: 'row-between mb16 wrap' }, [el('h3', { text: t('dash.transactions') }), el('div', { class: 'row gap8 wrap', style: 'align-items:center' }, [search, statusSel, csvBtn])]),
+      results,
     ]);
 
     host.appendChild(el('div', { class: 'grid-side' }, [tableCard, terminal]));
+    loadTxns();
   }
 
   function rowKV(k, v) { return el('div', { class: 'row-between' }, [el('span', { class: 'muted', text: k }), el('span', { text: v })]); }
@@ -256,10 +286,19 @@
       el('div', { class: 'copy-field mb8' }, [el('code', { text: url }), el('button', { class: 'btn btn-ghost btn-sm', text: 'Copy', onclick: () => copyText(url, 'Link copied') })]),
       el('div', { class: 'row gap8' }, [
         el('a', { class: 'btn btn-ghost btn-sm grow center', href: l.url, target: '_blank', text: 'Open ↗' }),
-        el('button', { class: 'btn btn-ghost btn-sm', text: l.active ? 'Disable' : 'Enable', onclick: async (e) => { await api('/api/merchant/payment-links/' + l.id, { method: 'PATCH', body: { active: !l.active } }); renderLinks(); } }),
+        el('button', { class: 'btn btn-ghost btn-sm', text: 'QR', onclick: () => showQR(l, url) }),
+        el('button', { class: 'btn btn-ghost btn-sm', text: l.active ? t('common.disable') : t('common.enable'), onclick: async () => { await api('/api/merchant/payment-links/' + l.id, { method: 'PATCH', body: { active: !l.active } }); renderLinks(); } }),
         el('button', { class: 'btn btn-danger btn-sm', text: '🗑', onclick: async () => { if (confirm('Delete this link?')) { await api('/api/merchant/payment-links/' + l.id, { method: 'DELETE' }); toast('Link deleted'); renderLinks(); } } }),
       ]),
     ]);
+  }
+
+  function showQR(l, url) {
+    openModal(modalShell(l.name, [
+      el('p', { class: 'muted mb16 center', text: 'Scan to pay' }),
+      el('div', { class: 'center mb16' }, [qrCanvas(url, 200)]),
+      el('div', { class: 'copy-field' }, [el('code', { text: url }), el('button', { class: 'btn btn-primary btn-sm', text: t('common.copy'), onclick: () => copyText(url, 'Link copied') })]),
+    ]));
   }
 
   function linkModal() {
@@ -546,12 +585,58 @@
       ]),
       el('div', { class: 'card' }, [
         el('div', { class: 'panel-title', text: 'Quick start — create a charge' }),
-        el('pre', { class: 'mono', style: 'background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:16px;overflow:auto;font-size:12.5px;line-height:1.6;color:var(--off);white-space:pre-wrap;word-break:break-all', text: curl }),
+        el('pre', { class: 'mono', style: 'background:var(--bg-2);border:1px solid var(--border);border-radius:11px;padding:16px;overflow:auto;font-size:12.5px;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-all', text: curl }),
         el('button', { class: 'btn btn-ghost btn-sm mt16', text: 'Copy cURL', onclick: () => copyText(curl, 'Copied') }),
       ]),
     ]));
+
+    const whHost = el('div', { class: 'mt24' });
+    host.appendChild(whHost);
+    renderWebhooks(whHost);
   }
   function maskKey(k) { return k.slice(0, 12) + '••••••••••••' + k.slice(-4); }
+
+  async function renderWebhooks(host) {
+    host.innerHTML = '<div class="loading-block"><span class="spinner"></span></div>';
+    const { data, deliveries } = await api('/api/merchant/webhooks');
+    host.innerHTML = '';
+    const addBtn = el('button', { class: 'btn btn-primary btn-sm', text: '+ Add endpoint', onclick: () => webhookModal() });
+    host.appendChild(el('div', { class: 'section-head' }, [el('div', {}, [el('h3', { text: 'Webhooks' }), el('p', { class: 'muted small', text: 'Receive signed events at your server. ' + data.length + ' endpoint(s).' })]), addBtn]));
+
+    if (data.length) {
+      host.appendChild(el('div', { class: 'mb24' }, data.map((ep) => el('div', { class: 'card mb16' }, [
+        el('div', { class: 'row-between mb8 wrap' }, [el('strong', { class: 'mono small', text: ep.url }), el('div', { class: 'row gap8' }, [
+          el('button', { class: 'btn btn-ghost btn-sm', text: 'Test', onclick: async () => { await api('/api/merchant/webhooks/' + ep.id + '/test', { method: 'POST' }); toast('Test event sent ✓', 'success'); renderWebhooks(host); } }),
+          el('button', { class: 'btn btn-danger btn-sm', text: 'Delete', onclick: async () => { await api('/api/merchant/webhooks/' + ep.id, { method: 'DELETE' }); renderWebhooks(host); } }),
+        ])]),
+        el('div', { class: 'copy-field' }, [el('code', { text: ep.secret }), el('button', { class: 'btn btn-ghost btn-sm', text: 'Copy secret', onclick: () => copyText(ep.secret, 'Signing secret copied') })]),
+      ]))));
+    }
+
+    host.appendChild(el('div', { class: 'card' }, [
+      el('div', { class: 'panel-title', text: 'Recent deliveries' }),
+      deliveries.length ? el('div', { class: 'table-wrap' }, [el('table', { class: 'data' }, [
+        el('thead', {}, [el('tr', {}, ['Event', 'Status', 'When'].map((h) => el('th', { text: h })))]),
+        el('tbody', {}, deliveries.map((d) => el('tr', {}, [
+          el('td', { class: 'mono small', text: d.type }),
+          el('td', {}, [el('span', { class: 'badge ' + (d.success ? 'succeeded' : 'failed'), text: d.statusCode })]),
+          el('td', { class: 'small muted nowrap', text: timeAgo(d.createdAt) }),
+        ]))),
+      ])]) : emptyState('🛰️', 'No deliveries yet'),
+    ]));
+  }
+
+  function webhookModal() {
+    const url = el('input', { type: 'url', placeholder: 'https://your-server.com/webhooks' });
+    const err = el('div', { class: 'form-error' });
+    const save = el('button', { class: 'btn btn-primary', text: 'Add endpoint' });
+    save.addEventListener('click', async () => {
+      err.textContent = '';
+      try { await api('/api/merchant/webhooks', { method: 'POST', body: { url: url.value } }); closeModal(); toast('Endpoint added ✓', 'success'); renderDevelopers(); }
+      catch (ex) { err.textContent = ex.message; }
+    });
+    openModal(modalShell('Add webhook endpoint', [el('label', { class: 'field' }, [el('span', { text: 'Endpoint URL' }), url]), el('p', { class: 'help', text: 'All events are sent, signed with a secret you can verify.' }), err], [el('button', { class: 'btn btn-ghost', text: t('common.cancel'), onclick: closeModal }), save]));
+  }
 
   // ============================ SETTINGS ============================
   async function renderSettings() {
@@ -588,11 +673,18 @@
           el('h3', { class: 'mb16', text: 'Your processing rate' }),
           el('div', { class: 'fee-break' }, [
             rowKV('Rate plan', rates.planName + (rates.isCustom ? ' (custom)' : '')),
-            el('div', { class: 'row-between total' }, [el('span', { text: 'You pay per transaction' }), el('span', { class: 'pierson', text: rates.price.label })]),
+            rates.coupon && rates.coupon.waived
+              ? el('div', { class: 'row-between total' }, [el('span', { text: 'You pay per transaction' }), el('span', { class: 'free', text: t('coupon.feesWaived') })])
+              : el('div', { class: 'row-between total' }, [el('span', { text: 'You pay per transaction' }), el('span', { class: 'pierson', text: rates.price.label })]),
           ]),
-          el('p', { class: 'help mt16', text: 'Rates are set by Pierson Pay. Contact your account manager to adjust.' }),
+          couponBox(rates),
         ]),
         el('div', { class: 'card' }, [
+          el('h3', { class: 'mb16', text: t('common.theme') + ' & ' + t('common.language') }),
+          el('p', { class: 'help mb16', text: 'Switch theme and language any time (also in the top bar).' }),
+          el('div', { id: 'settings-ctl' }),
+        ]),
+        el('div', { class: 'card mt24' }, [
           el('h3', { class: 'mb16', text: 'Account' }),
           rowKV('Account ID', m.id),
           rowKV('Email', m.email),
@@ -601,6 +693,33 @@
         ]),
       ]),
     ]));
+    $('#settings-ctl').appendChild(topControls());
+  }
+
+  function couponBox(rates) {
+    const wrap = el('div', { class: 'mt16' });
+    function render() {
+      wrap.innerHTML = '';
+      if (rates.coupon) {
+        wrap.appendChild(el('div', { class: 'row-between' }, [
+          el('span', { class: 'badge active', text: rates.coupon.label }),
+          el('button', { class: 'btn btn-ghost btn-sm', text: t('common.delete'), onclick: async () => { await api('/api/merchant/coupons', { method: 'DELETE' }); toast('Code removed'); renderSettings(); } }),
+        ]));
+      } else {
+        const code = el('input', { type: 'text', placeholder: 'e.g. FREE', style: 'text-transform:uppercase' });
+        const btn = el('button', { class: 'btn btn-primary btn-sm', text: t('dash.redeemCoupon') });
+        const e2 = el('div', { class: 'form-error' });
+        btn.addEventListener('click', async () => {
+          e2.textContent = '';
+          try { const r = await api('/api/merchant/coupons/redeem', { method: 'POST', body: { code: code.value } }); toast(t('coupon.applied') + ': ' + r.coupon.label, 'success'); renderSettings(); }
+          catch (ex) { e2.textContent = ex.message; }
+        });
+        wrap.appendChild(el('div', { class: 'row gap8', style: 'align-items:flex-start' }, [code, btn]));
+        wrap.appendChild(e2);
+      }
+    }
+    render();
+    return wrap;
   }
 
   // ============================ BOOT ============================
@@ -608,19 +727,52 @@
 
   function refreshAccount() {
     api('/auth/me').then((s) => {
-      if (s.merchant) $('#side-account').innerHTML = '<strong style="color:var(--off)">' + escapeHtml(s.merchant.businessName) + '</strong><br>' + escapeHtml(s.user.email);
+      if (s.merchant) $('#side-account').innerHTML = '<strong style="color:var(--text)">' + escapeHtml(s.merchant.businessName) + '</strong><br>' + escapeHtml(s.user.email);
     });
+  }
+
+  // ============================ NOTIFICATIONS ============================
+  async function refreshNotifBadge() {
+    try { const { unread } = await api('/api/merchant/notifications'); $('#notif-dot').classList.toggle('hidden', !unread); } catch {}
+  }
+  async function openNotifications() {
+    const { data } = await api('/api/merchant/notifications');
+    await api('/api/merchant/notifications/read', { method: 'POST' }).catch(() => {});
+    refreshNotifBadge();
+    const icon = (ty) => ({ payment_received: '💰', payout_sent: '🏦', subscription_renewed: '🔁', payment_failed: '⚠️' }[ty] || '🔔');
+    const body = data.length ? el('div', {}, data.map((n) => el('div', { class: 'row gap8', style: 'padding:11px 0;border-bottom:1px solid var(--border);align-items:flex-start' }, [
+      el('span', { style: 'font-size:18px', text: icon(n.type) }),
+      el('div', { class: 'grow' }, [el('div', {}, [el('strong', { text: n.title })]), el('div', { class: 'small muted', text: n.body }), el('div', { class: 'tiny dim mt8', text: timeAgo(n.createdAt) })]),
+    ]))) : emptyState('🔔', 'No notifications yet');
+    openModal(modalShell('Notifications', body));
+  }
+
+  function setupCommands() {
+    setCommands([
+      ...PAGES.map((p) => ({ label: t('dash.' + p), icon: '→', hint: '↵', run: () => setPage(p) })),
+      { label: 'New payment', icon: '＋', run: () => setPage('payments') },
+      { label: 'Toggle theme', icon: '◐', run: () => window.PP.toggleTheme() },
+      { label: 'Notifications', icon: '🔔', run: openNotifications },
+      { label: t('dash.signout'), icon: '→', run: logout },
+    ]);
   }
 
   async function boot() {
     let s;
     try { s = await requireRole('merchant'); } catch { return; }
+    await window.PP.ready;
     STATE.session = s; STATE.merchant = s.merchant;
-    refreshAccount();
+    $('#mark').innerHTML = brandMark();
+    $('#topctl').appendChild(topControls());
+    window.PP.applyI18n(document);
+    refreshAccount(); refreshNotifBadge(); setupCommands();
     $$('.side-link[data-page]').forEach((a) => a.addEventListener('click', () => setPage(a.dataset.page)));
     $('#logout-btn').addEventListener('click', logout);
     $('#quick-charge').addEventListener('click', () => setPage('payments'));
+    $('#cmdk-btn').addEventListener('click', openPalette);
+    $('#notif-btn').addEventListener('click', openNotifications);
     window.addEventListener('hashchange', () => setPage(location.hash.slice(1)));
+    document.addEventListener('localechange', () => { window.PP.applyI18n(document); setupCommands(); setPage(location.hash.slice(1) || 'overview'); });
     setPage(location.hash.slice(1) || 'overview');
   }
   boot();

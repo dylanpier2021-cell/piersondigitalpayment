@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;box-sizing:border-box}
+  body{width:1200px;height:630px;overflow:hidden;font-family:'Inter',sans-serif;background:#07090F;color:#EAF1FC;position:relative}
+  .a{position:absolute;border-radius:50%;filter:blur(90px)}
+  .a1{width:560px;height:560px;background:radial-gradient(circle,rgba(31,224,138,.5),transparent 65%);top:-160px;right:-120px}
+  .a2{width:480px;height:480px;background:radial-gradient(circle,rgba(139,92,246,.4),transparent 65%);bottom:-200px;left:-100px}
+  .wrap{position:relative;z-index:2;padding:84px 88px;height:100%;display:flex;flex-direction:column;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:18px;font-family:'Space Grotesk';font-weight:700;font-size:38px}
+  .mark{width:64px;height:64px}
+  .brand small{background:linear-gradient(135deg,#1FE08A,#0FB877);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  h1{font-family:'Space Grotesk';font-weight:700;font-size:92px;line-height:1.02;letter-spacing:-.03em;max-width:18ch}
+  h1 .g{background:linear-gradient(120deg,#1FE08A,#6EE7B7 55%,#8B5CF6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{font-size:30px;color:#98A6C0;margin-top:22px;max-width:30ch}
+  .pill{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;background:rgba(31,224,138,.14);border:1px solid rgba(31,224,138,.3);color:#4ADE9A;font-weight:600;font-size:22px;padding:10px 22px;border-radius:999px}
+</style>
+</head>
+<body>
+<div class="a a1"></div><div class="a a2"></div>
+<div class="wrap">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 40 40"><defs><linearGradient id="g" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#1FE08A"/><stop offset="1" stop-color="#0FB877"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="11" fill="url(#g)"/><path d="M11 14h18M20 14v14" stroke="#042414" stroke-width="3.4" stroke-linecap="round"/><path d="M24.5 24.5l4 -3.2 -4 -3.2" stroke="#042414" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".85"/></svg>
+    Trans<small>fado</small>
+  </div>
+  <div>
+    <h1>The new way <span class="g">to get paid.</span></h1>
+    <div class="sub">Lower fees than every major processor. No monthly fee. No games.</div>
+  </div>
+  <div class="pill">⚡ 2.5% + $0.10 — lower than Stripe, PayPal &amp; Square</div>
+</div>
+</body>
+</html>

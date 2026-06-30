@@ -3,41 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checkout — Pierson Pay</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Checkout — Transfado</title>
+<script>try{var t=localStorage.getItem('tf_theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <style>
-  body { background: radial-gradient(circle at 20% -10%, rgba(37,99,235,0.18), transparent 45%), var(--navy); }
-  .checkout { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
-  .pay-summary { padding: 56px 6vw; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
-  .pay-form-side { padding: 56px 6vw; display: flex; align-items: center; }
-  .pay-form-side .inner { width: 100%; max-width: 420px; margin: 0 auto; }
-  .biz { display:flex; align-items:center; gap:12px; margin-bottom: 40px; }
-  .biz .avatar { width:44px;height:44px;border-radius:12px;background:var(--grad-blue);display:grid;place-items:center;font-weight:900;color:#fff;font-size:20px; }
-  .amount-big { font-family: var(--font-head); font-weight:800; font-size: 56px; color:#fff; line-height:1; letter-spacing:-.02em; }
-  .pay-desc { color: var(--muted); font-size: 17px; margin-top: 10px; }
-  .interval-tag { display:inline-block; background: rgba(123,170,247,0.12); border:1px solid var(--line-strong); color: var(--blue-light); padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; margin-top:14px; }
-  .secure-note { margin-top:auto; color: var(--muted-dim); font-size: 13px; display:flex; align-items:center; gap:8px; }
-  .receipt { text-align:center; padding: 30px 0; }
-  .check-circle { width:72px;height:72px;border-radius:50%;background:var(--grad-green);display:grid;place-items:center;margin:0 auto 20px;font-size:38px;color:#04240f; animation: pop .3s ease; }
-  @keyframes pop { from{transform:scale(.6);opacity:0} to{transform:scale(1);opacity:1} }
-  @media (max-width: 860px){ .checkout{grid-template-columns:1fr;} .pay-summary{border-right:none;border-bottom:1px solid var(--line);padding:40px 24px;} .pay-form-side{padding:32px 24px;} .amount-big{font-size:44px;} }
+  body { background: var(--bg); }
+  .checkout { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+  .pay-summary { padding:56px 6vw; border-right:1px solid var(--border); display:flex; flex-direction:column; position:relative; overflow:hidden; background: var(--surface); }
+  .pay-form-side { padding:56px 6vw; display:flex; align-items:center; }
+  .pay-form-side .inner { width:100%; max-width:420px; margin:0 auto; }
+  .biz { display:flex; align-items:center; gap:12px; margin-bottom:40px; position:relative; z-index:2; }
+  .biz .avatar { width:46px; height:46px; border-radius:13px; background: var(--grad-brand); display:grid; place-items:center; font-weight:700; color: var(--accent-ink); font-size:20px; }
+  .amount-big { font-family: var(--font-display); font-weight:700; font-size:56px; color: var(--text); line-height:1; letter-spacing:-.03em; position:relative; z-index:2; }
+  .pay-desc { color: var(--text-muted); font-size:17px; margin-top:10px; position:relative; z-index:2; }
+  .interval-tag { display:inline-block; background: var(--accent-soft); border:1px solid var(--accent-ring); color: var(--accent); padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; margin-top:14px; position:relative; z-index:2; }
+  .secure-note { margin-top:auto; color: var(--text-dim); font-size:13px; display:flex; align-items:center; gap:8px; position:relative; z-index:2; }
+  .secure-note .brand-mark { width:20px; height:20px; }
+  .receipt { text-align:center; padding:30px 0; }
+  .check-circle { width:74px; height:74px; border-radius:50%; background: var(--grad-brand); display:grid; place-items:center; margin:0 auto 20px; font-size:38px; color: var(--accent-ink); animation: popc .4s var(--spring); }
+  @keyframes popc { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+  @media (max-width:860px){ .checkout{grid-template-columns:1fr;} .pay-summary{border-right:none;border-bottom:1px solid var(--border);padding:40px 24px;} .pay-form-side{padding:32px 24px;} .amount-big{font-size:44px;} }
 </style>
 </head>
 <body>
-<div id="root">
-  <div class="loading-block" style="min-height:100vh;display:grid;place-items:center;"><span class="spinner"></span></div>
-</div>
-
+<div id="root"><div class="loading-block" style="min-height:100vh;display:grid;place-items:center"><span class="spinner"></span></div></div>
 <script src="/js/common.js"></script>
 <script>
 (function(){
-  const { $, el, money, escapeHtml, api, toast } = window.PP;
+  const { $, el, money, escapeHtml, api, brandMark, brandIcon, centsFromDollars, fmtDate, t } = window.PP;
   const linkId = location.pathname.split('/').pop();
   const root = document.getElementById('root');
-
-  function avatar(name){ return (name||'P').trim().charAt(0).toUpperCase(); }
+  function avatar(name){ return (name||'T').trim().charAt(0).toUpperCase(); }
 
   function cardInputs(){
     const number = el('input',{type:'text',inputmode:'numeric',placeholder:'4242 4242 4242 4242',maxlength:'23',autocomplete:'cc-number'});
@@ -47,7 +45,7 @@
     exp.addEventListener('input',()=>{let v=exp.value.replace(/\D/g,'').slice(0,4);if(v.length>=3)v=v.slice(0,2)+' / '+v.slice(2);exp.value=v;});
     cvc.addEventListener('input',()=>{cvc.value=cvc.value.replace(/\D/g,'');});
     const node = el('div',{},[
-      el('label',{class:'field'},[el('span',{text:'Card information'}),number]),
+      el('label',{class:'field'},[el('span',{text:t('checkout.cardInfo')}),number]),
       el('div',{class:'field-row'},[exp,cvc]),
     ]);
     function get(){const d=number.value.replace(/\D/g,'');const ev=exp.value.replace(/\D/g,'');return {number:d,exp_month:ev.slice(0,2),exp_year:ev.slice(2),cvc:cvc.value};}
@@ -57,88 +55,91 @@
   function render(link){
     const isSub = link.mode === 'subscription';
     const biz = link.merchant ? link.merchant.businessName : 'Business';
+    const intervalLabel = t('interval.'+link.interval) || link.interval;
 
-    // Summary side
     const amountNode = link.allowCustomAmount
-      ? el('div',{},[el('div',{class:'amount-big',id:'amt-display',text:'$0.00'})])
+      ? el('div',{class:'amount-big',id:'amt-display',text:money(0)})
       : el('div',{class:'amount-big',text:money(link.amount)});
 
     const summary = el('div',{class:'pay-summary'},[
-      el('div',{class:'biz'},[el('div',{class:'avatar',text:avatar(biz)}),el('div',{},[el('strong',{style:'color:#fff;font-size:18px',text:biz}),link.merchant&&link.merchant.website?el('div',{class:'small muted',text:link.merchant.website}):null])]),
-      el('div',{class:'panel-title',text:isSub?'Subscribe to':'Pay'}),
-      el('h2',{style:'font-size:26px;margin-bottom:14px',text:link.name}),
+      el('div',{class:'aurora'},[el('span',{class:'a1'}),el('span',{class:'a2'})]),
+      el('div',{class:'biz'},[el('div',{class:'avatar',text:avatar(biz)}),el('div',{},[el('strong',{style:'color:var(--text);font-size:18px',text:biz}),link.merchant&&link.merchant.website?el('div',{class:'small muted',text:link.merchant.website}):null])]),
+      el('div',{class:'panel-title',style:'position:relative;z-index:2',text:isSub?t('checkout.subscribeTo'):t('checkout.payTo')}),
+      el('h2',{style:'font-size:26px;margin-bottom:14px;position:relative;z-index:2',text:link.name}),
       amountNode,
-      isSub?el('div',{class:'interval-tag',text:'Billed '+({week:'weekly',month:'monthly',year:'yearly'}[link.interval]||link.interval)}):null,
+      isSub?el('div',{class:'interval-tag',text:t('checkout.billed',{interval:intervalLabel})}):null,
       link.description?el('p',{class:'pay-desc',text:link.description}):null,
-      el('div',{class:'secure-note'},['🔒 Secured by ',el('strong',{style:'color:var(--blue-light)',text:'Pierson Pay'})]),
+      el('div',{class:'secure-note'},[el('span',{class:'brand-mark',html:brandMark()}),' ',t('checkout.securedBy')+' ',el('strong',{style:'color:var(--accent)',text:'Transfado'})]),
     ]);
 
-    // Form side
     const amount = el('input',{type:'text',inputmode:'decimal',placeholder:'0.00'});
     const cname = el('input',{type:'text',placeholder:'Full name'});
     const cemail = el('input',{type:'email',placeholder:'you@email.com'});
+    const code = el('input',{type:'text',placeholder:t('checkout.couponPlaceholder'),style:'text-transform:uppercase'});
+    const codeMsg = el('div',{class:'small mt8'});
     const card = cardInputs();
     const err = el('div',{class:'form-error'});
-    const btn = el('button',{class:'btn btn-primary btn-block btn-lg',text:isSub?'Subscribe':'Pay '+(link.allowCustomAmount?'':money(link.amount))});
+    const btn = el('button',{class:'btn btn-primary btn-block btn-lg',text:isSub?t('checkout.subscribe'):(t('checkout.pay')+(link.allowCustomAmount?'':' '+money(link.amount)))});
 
     if(link.allowCustomAmount){
-      amount.addEventListener('input',()=>{const c=window.PP.centsFromDollars(amount.value);const d=$('#amt-display');if(d)d.textContent=money(Number.isFinite(c)?c:0);});
+      amount.addEventListener('input',()=>{const c=centsFromDollars(amount.value);const d=$('#amt-display');if(d)d.textContent=money(Number.isFinite(c)?c:0);});
     }
+    const applyCode = el('button',{class:'btn btn-ghost btn-sm',text:t('checkout.applyCode'),onclick:async()=>{
+      codeMsg.textContent=''; if(!code.value.trim())return;
+      try{ const r=await api('/api/public/coupon/validate',{method:'POST',body:{code:code.value,linkId}}); codeMsg.style.color='var(--positive-text)'; codeMsg.textContent='✓ '+r.label; }
+      catch(ex){ codeMsg.style.color='var(--negative-text)'; codeMsg.textContent=ex.message; }
+    }});
 
     btn.addEventListener('click', async ()=>{
       err.textContent='';
-      const body = { customerName: cname.value, customerEmail: cemail.value, card: card.get() };
-      if(link.allowCustomAmount){ body.amount = window.PP.centsFromDollars(amount.value); if(!(body.amount>=50)){ err.textContent='Enter an amount of at least $0.50.'; return; } }
+      const body = { customerName: cname.value, customerEmail: cemail.value, card: card.get(), couponCode: code.value.trim()||null };
+      if(link.allowCustomAmount){ body.amount = centsFromDollars(amount.value); if(!(body.amount>=50)){ err.textContent='Enter an amount of at least $0.50.'; return; } }
       if(link.collectName && !cname.value.trim()){ err.textContent='Please enter your name.'; return; }
       if(link.collectEmail && !cemail.value.trim()){ err.textContent='Please enter your email.'; return; }
       btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
-      try {
-        const res = await api('/api/public/payment-links/'+linkId+'/pay',{method:'POST',body});
-        renderReceipt(res.receipt, res.mode);
-      } catch(ex){ err.textContent = ex.message || 'Payment failed.'; btn.disabled=false; btn.textContent = isSub?'Subscribe':'Pay'; }
+      try { const res = await api('/api/public/payment-links/'+linkId+'/pay',{method:'POST',body}); renderReceipt(res.receipt, res.mode); }
+      catch(ex){ err.textContent = ex.message || 'Payment failed.'; btn.disabled=false; btn.textContent = isSub?t('checkout.subscribe'):t('checkout.pay'); }
     });
 
-    const formFields = [];
-    if(link.allowCustomAmount) formFields.push(el('label',{class:'field'},[el('span',{text:'Amount (USD)'}),el('div',{class:'input-group'},[el('span',{class:'input-prefix',text:'$'}),amount])]));
-    if(link.collectName) formFields.push(el('label',{class:'field'},[el('span',{text:'Name'}),cname]));
-    if(link.collectEmail) formFields.push(el('label',{class:'field'},[el('span',{text:'Email'}),cemail]));
-    formFields.push(card.node, err, btn);
-    formFields.push(el('p',{class:'help center mt16',html:'Test card <b>4242 4242 4242 4242</b>, any future expiry, any CVC.'}));
-    formFields.push(el('p',{class:'help center',style:'margin-top:6px',html:'Secured by Pierson Pay · <a href="/legal/privacy" target="_blank">Privacy</a> · <a href="/legal/terms" target="_blank">Terms</a>'}));
+    const fields = [];
+    if(link.allowCustomAmount) fields.push(el('label',{class:'field'},[el('span',{text:t('common.amount')+' (USD)'}),el('div',{class:'input-group'},[el('span',{class:'input-prefix',text:'$'}),amount])]));
+    if(link.collectName) fields.push(el('label',{class:'field'},[el('span',{text:t('common.name')}),cname]));
+    if(link.collectEmail) fields.push(el('label',{class:'field'},[el('span',{text:t('common.email')}),cemail]));
+    fields.push(card.node);
+    fields.push(el('label',{class:'field'},[el('span',{text:t('checkout.couponPlaceholder')}),el('div',{class:'row gap8'},[code,applyCode]),codeMsg]));
+    fields.push(err,btn);
+    fields.push(el('p',{class:'help center mt16',html:'Test card <b>4242 4242 4242 4242</b>, any future expiry, any CVC.'}));
+    fields.push(el('p',{class:'help center',style:'margin-top:6px',html:'<a href="/legal/privacy" target="_blank">Privacy</a> · <a href="/legal/terms" target="_blank">Terms</a>'}));
 
-    const formSide = el('div',{class:'pay-form-side'},[el('div',{class:'inner'},[
-      el('h3',{class:'mb24',text:isSub?'Start your subscription':'Payment details'}),
-      ...formFields,
-    ])]);
-
-    root.innerHTML='';
-    root.appendChild(el('div',{class:'checkout'},[summary, formSide]));
+    const formSide = el('div',{class:'pay-form-side'},[el('div',{class:'inner'},[el('h3',{class:'mb24',text:isSub?t('checkout.startSub'):t('checkout.paymentDetails')}),...fields])]);
+    root.innerHTML=''; root.appendChild(el('div',{class:'checkout'},[summary,formSide]));
   }
 
   function renderReceipt(r, mode){
     root.innerHTML='';
     root.appendChild(el('div',{class:'checkout'},[
       el('div',{class:'pay-summary'},[
-        el('div',{class:'biz'},[el('div',{class:'avatar',text:(r.businessName||'P').charAt(0)}),el('strong',{style:'color:#fff;font-size:18px',text:r.businessName})]),
-        el('div',{class:'panel-title',text:'Amount paid'}),
+        el('div',{class:'aurora'},[el('span',{class:'a1'}),el('span',{class:'a2'})]),
+        el('div',{class:'biz'},[el('div',{class:'avatar',text:(r.businessName||'T').charAt(0)}),el('strong',{style:'color:var(--text);font-size:18px',text:r.businessName})]),
+        el('div',{class:'panel-title',style:'position:relative;z-index:2',text:t('checkout.amountPaid')}),
         el('div',{class:'amount-big',text:money(r.amount)}),
-        r.interval?el('div',{class:'interval-tag',text:'Renews '+({week:'weekly',month:'monthly',year:'yearly'}[r.interval]||r.interval)}):null,
-        el('div',{class:'secure-note'},['🔒 Secured by ',el('strong',{style:'color:var(--blue-light)',text:'Pierson Pay'})]),
+        r.interval?el('div',{class:'interval-tag',text:t('checkout.nextCharge')+': '+fmtDate(r.nextBillingAt)}):null,
+        el('div',{class:'secure-note'},[el('span',{class:'brand-mark',html:brandMark()}),' ',t('checkout.securedBy')+' ',el('strong',{style:'color:var(--accent)',text:'Transfado'})]),
       ]),
       el('div',{class:'pay-form-side'},[el('div',{class:'inner receipt'},[
         el('div',{class:'check-circle',text:'✓'}),
-        el('h2',{style:'font-size:30px',text:'Payment successful'}),
+        el('h2',{style:'font-size:30px',text:t('checkout.success')}),
         el('p',{class:'muted mt8 mb24',text:(r.description||'Thank you')+' · '+money(r.amount)}),
         el('div',{class:'fee-break',style:'text-align:left'},[
-          kv('Paid to', r.businessName),
+          kv(t('checkout.paidTo'), r.businessName),
           kv('Statement', r.statementDescriptor),
-          r.card?kv('Card', window.PP.brandIcon(r.card.brand)+' ••'+r.card.last4):null,
-          kv('Receipt ID', r.id),
+          r.card?kv(t('common.card'), brandIcon(r.card.brand)+' ••'+r.card.last4):null,
+          kv(t('checkout.receiptId'), r.id),
         ]),
-        mode==='subscription'?el('p',{class:'help mt16',text:'Next charge: '+window.PP.fmtDate(r.nextBillingAt)}):null,
         el('p',{class:'small muted mt24',text:'A receipt has been sent to your email (sandbox).'}),
       ])]),
     ]));
+    window.PP.confetti();
   }
   function kv(k,v){ return el('div',{class:'row-between'},[el('span',{class:'muted',text:k}),el('span',{class:'mono tiny',text:v})]); }
 
@@ -147,14 +148,16 @@
     root.appendChild(el('div',{style:'min-height:100vh;display:grid;place-items:center;padding:24px'},[
       el('div',{class:'card',style:'max-width:420px;text-align:center'},[
         el('div',{style:'font-size:46px;margin-bottom:12px',text:'🔗'}),
-        el('h2',{text:'Link unavailable'}),
+        el('h2',{text:t('checkout.linkUnavailable')}),
         el('p',{class:'muted mt8',text:msg}),
-        el('a',{class:'btn btn-ghost mt24',href:'/',text:'Go to Pierson Pay'}),
+        el('a',{class:'btn btn-ghost mt24',href:'/',text:'Transfado'}),
       ]),
     ]));
   }
 
-  api('/api/public/payment-links/'+linkId).then(render).catch((ex)=>renderError(ex.message||'This payment link is not available.'));
+  window.PP.ready.then(()=>{
+    api('/api/public/payment-links/'+linkId).then(render).catch((ex)=>renderError(ex.message||'This payment link is not available.'));
+  });
 })();
 </script>
 </body>
