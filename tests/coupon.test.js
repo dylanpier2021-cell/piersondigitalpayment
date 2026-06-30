@@ -5,7 +5,7 @@ const APPROVE = { number: '4242424242424242', exp_month: 12, exp_year: 2030, cvc
 async function run() {
   const c = new Checker('Coupons / fee-waiver');
   const admin = makeJar();
-  await login(admin, 'owner@piersondigitalmarketing.com', 'pierson123');
+  await login(admin, 'owner@transfado.com', 'transfado123');
 
   // ---- FREE coupon exists and waives fees for the seeded Gloss Spot ----
   const merchants = (await admin.fetch('/api/admin/merchants')).data.data;

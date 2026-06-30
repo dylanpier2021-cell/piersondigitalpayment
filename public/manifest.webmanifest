@@ -1,7 +1,7 @@
 {
   "name": "Transfado",
   "short_name": "Transfado",
-  "description": "The new way to get paid. A payment platform by Pierson Digital.",
+  "description": "The new way to get paid. Accept cards, payment links, and subscriptions.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

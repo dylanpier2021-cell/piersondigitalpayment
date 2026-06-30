@@ -675,7 +675,7 @@
             rowKV('Rate plan', rates.planName + (rates.isCustom ? ' (custom)' : '')),
             rates.coupon && rates.coupon.waived
               ? el('div', { class: 'row-between total' }, [el('span', { text: 'You pay per transaction' }), el('span', { class: 'free', text: t('coupon.feesWaived') })])
-              : el('div', { class: 'row-between total' }, [el('span', { text: 'You pay per transaction' }), el('span', { class: 'pierson', text: rates.price.label })]),
+              : el('div', { class: 'row-between total' }, [el('span', { text: 'You pay per transaction' }), el('span', { class: 'margin-hl', text: rates.price.label })]),
           ]),
           couponBox(rates),
         ]),

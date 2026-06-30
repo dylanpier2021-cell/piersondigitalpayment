@@ -31,7 +31,7 @@ loadEnvFile();
 module.exports = {
   PORT: Number(process.env.PORT) || 4242,
   SESSION_SECRET: process.env.SESSION_SECRET || 'transfado-dev-secret',
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'owner@piersondigitalmarketing.com',
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'pierson123',
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'owner@transfado.com',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'transfado123',
   PROCESSING_MODE: process.env.PROCESSING_MODE || 'sandbox',
 };

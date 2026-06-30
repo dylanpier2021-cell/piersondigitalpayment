@@ -13,7 +13,7 @@
   "toast": { "copied": "Kopiert" },
   "cmdk": { "placeholder": "Befehl eingeben oder suchen…", "empty": "Keine Ergebnisse" },
   "landing": {
-    "eyebrow": "Von Pierson Digital",
+    "eyebrow": "Moderne Zahlungsabwicklung",
     "title1": "Die neue Art,",
     "title2": "bezahlt zu werden.",
     "sub": "Akzeptiere Karten, versende Zahlungslinks und stelle Abos in Rechnung — zum niedrigsten Pauschaltarif aller großen Anbieter. Keine Monatsgebühr. Keine Tricks.",
@@ -54,7 +54,7 @@
     "ctaTitle": "Bereit, auf die neue Art zu kassieren?",
     "ctaSub": "Eröffne ein Transfado-Konto und starte in unter einer Minute.",
     "ctaBtn": "Kostenlos starten →",
-    "footerTag": "Ein Produkt von Pierson Digital",
+    "footerTag": "© 2026 Transfado",
     "footerSandbox": "Sandbox-Umgebung — es werden keine echten Karten belastet."
   },
   "auth": {

@@ -18,3 +18,6 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Internal build brief (not for the public repo)
+TRANSFADO_BRIEF.md

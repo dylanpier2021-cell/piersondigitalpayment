@@ -7,13 +7,13 @@ const { bpsOf, clamp } = require('./util');
  *
  * Every fee plan carries TWO rate pairs:
  *
- *   cost  = costPct (bps) + costFixed (cents)   -> what processing "costs" Pierson
+ *   cost  = costPct (bps) + costFixed (cents)   -> what processing "costs" the platform
  *   price = pricePct (bps) + priceFixed (cents) -> what the client is charged
  *
  * On each charge we compute:
  *   merchantFee   = price applied to the amount   (deducted from the client)
- *   processorCost = cost applied to the amount    (Pierson's underlying cost)
- *   piersonMargin = merchantFee - processorCost   (Pierson's profit)
+ *   processorCost = cost applied to the amount    (the platform's underlying cost)
+ *   piersonMargin = merchantFee - processorCost   (the platform's profit)
  *   merchantNet   = amount - merchantFee          (what the client keeps)
  *
  * A merchant can either point at a shared fee plan (feePlanId) or carry a

@@ -147,7 +147,7 @@ function createCharge(opts) {
 
 /**
  * Refund a charge (full or partial). Reverses the proportional net from the
- * merchant's balance. Pierson retains its processing margin (the cost of
+ * merchant's balance. The platform retains its processing margin (the cost of
  * processing was already incurred), mirroring how acquirers handle refunds.
  */
 function refundCharge(txnId, refundCents) {

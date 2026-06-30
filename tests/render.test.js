@@ -65,7 +65,7 @@ async function run() {
 
   // ---- Admin console ----
   {
-    const jar = makeJar(); await login(jar, 'owner@piersondigitalmarketing.com', 'pierson123');
+    const jar = makeJar(); await login(jar, 'owner@transfado.com', 'transfado123');
     for (const hash of ['#overview', '#clients', '#plans', '#coupons', '#transactions', '#settings']) {
       const { errors, doc } = await renderPage('admin.html', jar, { hash, pathname: '/admin' });
       const pg = doc.querySelector('.page.active');

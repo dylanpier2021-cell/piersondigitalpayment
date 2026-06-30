@@ -1,0 +1,28 @@
+# Render Blueprint — one-click deploy.
+# In Render: New + → Blueprint → connect this GitHub repo → Apply.
+# Render reads this file and provisions the service automatically.
+services:
+  - type: web
+    name: transfado
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: SESSION_SECRET
+        generateValue: true # Render generates a strong secret
+      - key: ADMIN_EMAIL
+        value: owner@transfado.com
+      - key: ADMIN_PASSWORD
+        value: transfado123
+      # For a PERSISTENT database, switch plan to "starter", uncomment the disk
+      # block below, and add:  - key: TF_DATA_DIR  value: /var/data
+    # disk:
+    #   name: data
+    #   mountPath: /var/data
+    #   sizeGB: 1

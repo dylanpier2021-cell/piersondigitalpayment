@@ -139,7 +139,7 @@
       marginNote.innerHTML = '';
       marginNote.appendChild(rowKV('Client pays', (pp / 100).toFixed(2) + '% + ' + money(pf)));
       marginNote.appendChild(rowKV('Your cost', (cp / 100).toFixed(2) + '% + ' + money(cf)));
-      marginNote.appendChild(el('div', { class: 'row-between total' }, [el('span', { text: 'Your margin' }), el('span', { class: 'pierson', text: ((pp - cp) / 100).toFixed(2) + '% + ' + money(pf - cf) })]));
+      marginNote.appendChild(el('div', { class: 'row-between total' }, [el('span', { text: 'Your margin' }), el('span', { class: 'margin-hl', text: ((pp - cp) / 100).toFixed(2) + '% + ' + money(pf - cf) })]));
     }
     [ovPricePct, ovPriceFixed, ovCostPct, ovCostFixed].forEach((i) => i.addEventListener('input', refreshMargin));
     refreshMargin();
@@ -210,7 +210,7 @@
       el('div', { class: 'fee-break' }, [
         rowKV('Client pays', (p.pricePct / 100).toFixed(2) + '% + ' + money(p.priceFixed)),
         rowKV('Your cost', (p.costPct / 100).toFixed(2) + '% + ' + money(p.costFixed)),
-        el('div', { class: 'row-between total' }, [el('span', { text: 'Your margin' }), el('span', { class: 'pierson', text: ((p.pricePct - p.costPct) / 100).toFixed(2) + '% + ' + money(p.priceFixed - p.costFixed) })]),
+        el('div', { class: 'row-between total' }, [el('span', { text: 'Your margin' }), el('span', { class: 'margin-hl', text: ((p.pricePct - p.costPct) / 100).toFixed(2) + '% + ' + money(p.priceFixed - p.costFixed) })]),
       ]),
       el('div', { class: 'small muted mt16 mb16', text: (usage[p.id] || 0) + ' client(s) on this plan' }),
       el('div', { class: 'row gap8' }, [
@@ -234,7 +234,7 @@
     function refresh() {
       const pp = pctToBps(pricePct.value), pf = dollarsToCents(priceFixed.value), cp = pctToBps(costPct.value), cf = dollarsToCents(costFixed.value);
       note.innerHTML = '';
-      note.appendChild(el('div', { class: 'row-between total' }, [el('span', { text: 'Your margin' }), el('span', { class: 'pierson', text: (((pp - cp) || 0) / 100).toFixed(2) + '% + ' + money((pf - cf) || 0) })]));
+      note.appendChild(el('div', { class: 'row-between total' }, [el('span', { text: 'Your margin' }), el('span', { class: 'margin-hl', text: (((pp - cp) || 0) / 100).toFixed(2) + '% + ' + money((pf - cf) || 0) })]));
     }
     [pricePct, priceFixed, costPct, costFixed].forEach((i) => i.addEventListener('input', refresh)); refresh();
 

@@ -72,15 +72,15 @@ function merchantMetrics(merchantId) {
   };
 }
 
-/** Platform-wide metrics for the Pierson admin dashboard. */
+/** Platform-wide metrics for the admin dashboard. */
 function platformMetrics() {
   const merchants = db.collection('merchants');
   const charges = succeededCharges();
 
   let totalVolume = 0;
   let piersonRevenue = 0; // total fees charged to clients
-  let processorCost = 0; // Pierson's underlying cost
-  let piersonProfit = 0; // margin Pierson keeps
+  let processorCost = 0; // the platform's underlying cost
+  let piersonProfit = 0; // margin the platform keeps
   let merchantNet = 0;
   for (const c of charges) {
     totalVolume += c.amount - (c.amountRefunded || 0);

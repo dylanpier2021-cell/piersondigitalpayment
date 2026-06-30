@@ -13,7 +13,7 @@
   "toast": { "copied": "Copiado" },
   "cmdk": { "placeholder": "Escribe un comando o busca…", "empty": "Sin resultados" },
   "landing": {
-    "eyebrow": "De Pierson Digital",
+    "eyebrow": "Procesamiento de pagos moderno",
     "title1": "La nueva forma",
     "title2": "de cobrar.",
     "sub": "Acepta tarjetas, envía enlaces de pago y cobra suscripciones — con la tarifa plana más baja de cualquier procesador. Sin cuota mensual. Sin trucos.",
@@ -54,7 +54,7 @@
     "ctaTitle": "¿Listo para cobrar de la nueva forma?",
     "ctaSub": "Abre una cuenta Transfado y empieza a procesar en menos de un minuto.",
     "ctaBtn": "Empieza gratis →",
-    "footerTag": "Un producto de Pierson Digital",
+    "footerTag": "© 2026 Transfado",
     "footerSandbox": "Entorno sandbox — no se cobran tarjetas reales."
   },
   "auth": {

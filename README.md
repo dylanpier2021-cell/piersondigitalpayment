@@ -1,6 +1,6 @@
 # Transfado
 
-**The new way to get paid.** A payment platform by [Pierson Digital](https://piersondigitalmarketing.com) where **you are the processor** — you set your own cost basis and what each client pays, and the platform computes your margin on every transaction.
+**The new way to get paid.** A payment platform where **you are the processor** — you set your own cost basis and what each client pays, and the platform computes your margin on every transaction.
 
 It does what the big processors do — card payments, hosted checkout, **payment links**, **subscriptions with MRR**, payouts, **coupons/fee-waivers**, webhooks, and a developer API — at **the lowest flat rate of any major processor** (2.5% + $0.10, no monthly fee), and *you* own the fee schedule for yourself and the clients you onboard.
 
@@ -19,7 +19,7 @@ Open **http://localhost:4242**. The database auto-seeds on first run with rich d
 
 | Role | Email | Password |
 |------|-------|----------|
-| **Processor (you)** | `owner@piersondigitalmarketing.com` | `pierson123` |
+| **Processor (you)** | `owner@transfado.com` | `transfado123` |
 | Client | `boochies@example.com` | `demo1234` |
 
 Five demo clients: `boochies@`, `aricka@`, `jermaine@`, `gloss@` (fees waived via `FREE`), `mad@` — all `@example.com` / `demo1234`. Or create a client at **/signup**.
@@ -28,6 +28,14 @@ Five demo clients: `boochies@`, `aricka@`, `jermaine@`, `gloss@` (fees waived vi
 npm run seed     # wipe + reseed demo data
 npm test         # run the full suite (api + coupons + DOM render) on an isolated port
 ```
+
+---
+
+## Deploy (make login work in production)
+
+Transfado is **full-stack** — the same Node server serves the UI *and* the API/auth/database from one origin. **Static hosting can't run it** (login will fail). Deploy the Node app to **Render, Railway, Fly.io, or a VPS** and point your domain at it. Ships with `render.yaml` (one-click Blueprint), `Dockerfile`, `Procfile`, and `fly.toml`.
+
+Fastest path — **Render**: dashboard.render.com → New + → **Blueprint** → connect this repo → **Apply**. Then verify `https://<app>/api/health` returns JSON and sign in with `owner@transfado.com` / `transfado123`. Full step-by-step (Render / Railway / Fly / VPS, custom domain, persistence) in **[DEPLOY.md](DEPLOY.md)**.
 
 ---
 

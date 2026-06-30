@@ -136,13 +136,13 @@ function seed() {
   settings.platformName = 'Transfado';
   db.save();
 
-  // ---- Admin (Pierson Digital) ----
+  // ---- Admin (platform owner) ----
   db.insert('users', {
     id: prefixedId('usr', 18),
     object: 'user',
     role: 'admin',
     merchantId: null,
-    name: 'Pierson Digital',
+    name: 'Transfado',
     email: config.ADMIN_EMAIL.toLowerCase(),
     passwordHash: auth.hashPassword(config.ADMIN_PASSWORD),
     createdAt: now(),

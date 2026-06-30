@@ -8,7 +8,7 @@ async function run() {
   const admin = makeJar(); const merch = makeJar();
 
   // ---- auth ----
-  await login(admin, 'owner@piersondigitalmarketing.com', 'pierson123');
+  await login(admin, 'owner@transfado.com', 'transfado123');
   c.ok(true, 'admin login');
   const me = await login(merch, 'boochies@example.com', 'demo1234');
   c.ok(me.merchant && me.merchant.businessName, 'merchant login');

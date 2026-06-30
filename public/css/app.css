@@ -1,6 +1,6 @@
 /* ============================================================
    Transfado — design system
-   The new way to get paid. A product of Pierson Digital.
+   The new way to get paid. Transfado.
    Tokens drive both dark (default) and light themes.
    ============================================================ */
 
@@ -340,7 +340,7 @@ fieldset { border: none; }
 .fee-break { background: var(--bg-2); border: 1px solid var(--border); border-radius: 13px; padding: 16px; font-size: 14px; }
 .fee-break .row-between { padding: 6px 0; }
 .fee-break .total { border-top: 1px dashed var(--border-strong); margin-top: 8px; padding-top: 12px; font-weight: 700; color: var(--text); }
-.fee-break .pierson { color: var(--gold); }
+.fee-break .margin-hl { color: var(--gold); }
 .fee-break .free { color: var(--positive-text); font-weight:700; }
 
 .copy-field { display:flex; align-items:center; gap:8px; background: var(--bg-2); border:1px solid var(--border-strong); border-radius: 11px; padding: 4px 4px 4px 14px; }

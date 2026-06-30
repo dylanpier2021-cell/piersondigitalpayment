@@ -1,7 +1,7 @@
 {
   "name": "transfado",
   "version": "2.0.0",
-  "description": "Transfado — the new way to get paid. A payment platform by Pierson Digital where you are the processor and set your own cost basis and client pricing on every transaction.",
+  "description": "Transfado — the new way to get paid. A payment platform where you are the processor and set your own cost basis and client pricing on every transaction.",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
@@ -14,10 +14,10 @@
     "payment-processor",
     "payment-facilitator",
     "transfado",
-    "pierson-digital",
+    "flat-rate",
     "fintech"
   ],
-  "author": "Pierson Digital (piersondigitalmarketing.com)",
+  "author": "Transfado",
   "license": "UNLICENSED",
   "private": true,
   "engines": {

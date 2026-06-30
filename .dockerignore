@@ -1,0 +1,8 @@
+node_modules
+data
+tests/.tmpdata
+.git
+.gitignore
+*.log
+.env
+npm-debug.log*

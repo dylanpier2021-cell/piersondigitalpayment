@@ -99,7 +99,7 @@ function authorize(card, amountCents, opts = {}) {
     brand: (known && known.brand) || brand,
     last4,
     authCode: randomId(6).toUpperCase(),
-    network: 'pierson-sandbox',
+    network: 'transfado-sandbox',
   };
 }
 

@@ -101,7 +101,7 @@ const server = app.listen(config.PORT, () => {
   console.log('');
   console.log('  ╔════════════════════════════════════════════════╗');
   console.log('  ║   Transfado  —  the new way to get paid        ║');
-  console.log('  ║   sandbox · a product of Pierson Digital        ║');
+  console.log('  ║   sandbox mode · no real cards are charged     ║');
   console.log('  ╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`  ▸ App:        http://localhost:${config.PORT}`);

@@ -196,8 +196,8 @@ function platformVolumeMrr() {
 }
 
 /**
- * Pierson's own recurring profit MRR: for each active subscription, the
- * monthly-normalized margin Pierson earns on each recurring charge.
+ * The platform's own recurring profit MRR: for each active subscription, the
+ * monthly-normalized margin the platform earns on each recurring charge.
  */
 function piersonRecurringMrr() {
   const feePlans = db.collection('feePlans');

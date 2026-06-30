@@ -1,0 +1,31 @@
+# Fly.io config. Deploy with:  fly launch --copy-config --now   (then `fly deploy`)
+app = "transfado"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "4242"
+  ADMIN_EMAIL = "owner@transfado.com"
+  # Set secrets with: fly secrets set SESSION_SECRET=... ADMIN_PASSWORD=...
+
+[http_service]
+  internal_port = 4242
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  method = "GET"
+  path = "/api/health"
+  interval = "30s"
+  timeout = "4s"
+
+# For a persistent database, create a volume and mount it:
+#   fly volumes create transfado_data --size 1
+# [mounts]
+#   source = "transfado_data"
+#   destination = "/data"
+# [env]   TF_DATA_DIR = "/data"
