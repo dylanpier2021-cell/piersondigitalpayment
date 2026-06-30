@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Processor Console — Pierson Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  .sidebar { background: linear-gradient(180deg, #0b1830, var(--navy2)); }
+  .pill-pierson { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); background:rgba(250,204,21,0.12); border:1px solid rgba(250,204,21,0.25); padding:3px 10px; border-radius:999px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <a href="/" class="brand"><span class="brand-mark" style="background:var(--grad-gold);color:#2a1c00">P</span> Pierson<small>Pay</small></a>
+    <div style="padding:0 8px 10px"><span class="pill-pierson">Processor Console</span></div>
+    <a class="side-link" data-page="overview"><span class="ico">▣</span> Overview</a>
+    <a class="side-link" data-page="clients"><span class="ico">👥</span> Clients</a>
+    <a class="side-link" data-page="plans"><span class="ico">🎚️</span> Fee Plans</a>
+    <a class="side-link" data-page="transactions"><span class="ico">🧾</span> Transactions</a>
+    <div class="side-sep"></div>
+    <a class="side-link" data-page="settings"><span class="ico">⚙</span> Settings</a>
+    <div class="side-foot">
+      <div class="side-sep"></div>
+      <div class="side-account" id="side-account">Pierson Digital</div>
+      <a class="side-link" id="logout-btn"><span class="ico">→</span> Sign out</a>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Overview</h1>
+      <div class="row" style="align-items:center;gap:12px">
+        <span class="badge neutral plain">● Sandbox</span>
+        <button class="btn btn-gold btn-sm" id="run-billing">▶ Run billing</button>
+      </div>
+    </div>
+    <div class="content">
+      <section class="page" id="page-overview"><div class="loading-block"><span class="spinner"></span></div></section>
+      <section class="page" id="page-clients"></section>
+      <section class="page" id="page-plans"></section>
+      <section class="page" id="page-transactions"></section>
+      <section class="page" id="page-settings"></section>
+    </div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

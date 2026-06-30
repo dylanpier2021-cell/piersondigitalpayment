@@ -1,0 +1,29 @@
+{
+  "name": "pierson-pay",
+  "version": "1.0.0",
+  "description": "Pierson Pay — a payment-processing platform where Pierson Digital is the processor and sets its own cost basis and client pricing on every transaction.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/seed.js --force"
+  },
+  "keywords": [
+    "payments",
+    "payment-processor",
+    "payment-facilitator",
+    "pierson-digital",
+    "fintech"
+  ],
+  "author": "Pierson Digital (piersondigitalmarketing.com)",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2"
+  }
+}

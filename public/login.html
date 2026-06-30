@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Pierson Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  .auth-wrap { min-height: 100vh; display:grid; grid-template-columns: 1fr 1fr; }
+  .auth-aside { background: var(--navy2); border-right:1px solid var(--line); padding: 48px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+  .auth-aside::before { content:""; position:absolute; width:460px;height:460px; right:-180px; top:-160px; background: radial-gradient(circle, rgba(37,99,235,0.25), transparent 65%); }
+  .auth-aside h2 { font-size: 38px; line-height:1.05; margin-top: 30px; }
+  .auth-aside .grad { background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .auth-aside ul { list-style:none; margin-top:24px; display:flex; flex-direction:column; gap:12px; }
+  .auth-aside li { color: var(--off); display:flex; gap:10px; align-items:center; }
+  .auth-aside li b { color: var(--green-light); }
+  .auth-main { display:flex; align-items:center; justify-content:center; padding: 40px 24px; }
+  .auth-card { width:100%; max-width: 400px; }
+  .auth-card h1 { font-size: 32px; margin-bottom: 6px; }
+  .demo-box { background: var(--navy2); border:1px dashed var(--line-strong); border-radius:12px; padding:14px 16px; font-size:13px; color:var(--muted); margin-top:22px; }
+  .demo-box b { color: var(--off); }
+  .demo-box code { color: var(--blue-light); }
+  @media (max-width: 820px){ .auth-wrap{grid-template-columns:1fr;} .auth-aside{display:none;} }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <aside class="auth-aside">
+    <a href="/" class="brand"><span class="brand-mark">P</span> Pierson<small>Pay</small></a>
+    <div>
+      <h2>Run payments<br>like a <span class="grad">pro.</span></h2>
+      <ul>
+        <li>✓ Accept cards &amp; <b>set your own fees</b></li>
+        <li>✓ <b>Payment links</b> &amp; subscriptions</li>
+        <li>✓ Track <b>MRR</b> and your margin live</li>
+      </ul>
+    </div>
+    <p class="small dim">A product of Pierson Digital</p>
+  </aside>
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="muted mb24">Sign in to your Pierson Pay account.</p>
+      <form id="login-form">
+        <label class="field"><span>Email</span>
+          <input type="email" name="email" autocomplete="email" required placeholder="you@business.com"></label>
+        <label class="field"><span>Password</span>
+          <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••"></label>
+        <div class="form-error" id="err"></div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit" id="submit">Sign in</button>
+      </form>
+      <p class="small muted mt24 center">No account? <a href="/signup">Create one →</a></p>
+      <div class="demo-box">
+        <b>Demo logins</b><br>
+        Processor (you): <code>owner@piersondigitalmarketing.com</code> / <code>pierson123</code><br>
+        Client: <code>boochies@example.com</code> / <code>demo1234</code>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/js/common.js"></script>
+<script>
+(function () {
+  const { api } = window.PP;
+  const form = document.getElementById('login-form');
+  const err = document.getElementById('err');
+  const submit = document.getElementById('submit');
+  // If already signed in, bounce to the right place.
+  PP.getSession().then(s => { if (s.authenticated) location.href = s.user.role === 'admin' ? '/admin' : '/dashboard'; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    submit.disabled = true; submit.textContent = 'Signing in…';
+    try {
+      const data = await api('/auth/login', { method: 'POST', body: { email: form.email.value, password: form.password.value } });
+      location.href = data.redirect || '/dashboard';
+    } catch (ex) {
+      err.textContent = ex.message;
+      submit.disabled = false; submit.textContent = 'Sign in';
+    }
+  });
+})();
+</script>
+</body>
+</html>

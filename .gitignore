@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Runtime data (the file-based database). Delete to reset; reseed with `npm run seed`.
+data/db.json
+data/*.bak
+
+# Secrets
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

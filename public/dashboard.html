@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Pierson Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <a href="/" class="brand"><span class="brand-mark">P</span> Pierson<small>Pay</small></a>
+    <a class="side-link" data-page="overview"><span class="ico">▣</span> Overview</a>
+    <a class="side-link" data-page="payments"><span class="ico">💳</span> Payments</a>
+    <a class="side-link" data-page="links"><span class="ico">🔗</span> Payment Links</a>
+    <a class="side-link" data-page="subscriptions"><span class="ico">🔁</span> Subscriptions</a>
+    <a class="side-link" data-page="payouts"><span class="ico">🏦</span> Payouts</a>
+    <div class="side-sep"></div>
+    <a class="side-link" data-page="developers"><span class="ico">{ }</span> Developers</a>
+    <a class="side-link" data-page="settings"><span class="ico">⚙</span> Settings</a>
+    <div class="side-foot">
+      <div class="side-sep"></div>
+      <div class="side-account" id="side-account">Loading…</div>
+      <a class="side-link" id="logout-btn"><span class="ico">→</span> Sign out</a>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Overview</h1>
+      <div class="row" style="align-items:center; gap:12px;">
+        <span class="badge neutral plain" id="mode-badge">● Sandbox</span>
+        <button class="btn btn-primary btn-sm" id="quick-charge">+ New payment</button>
+      </div>
+    </div>
+    <div class="content">
+      <section class="page" id="page-overview"><div class="loading-block"><span class="spinner"></span></div></section>
+      <section class="page" id="page-payments"></section>
+      <section class="page" id="page-links"></section>
+      <section class="page" id="page-subscriptions"></section>
+      <section class="page" id="page-payouts"></section>
+      <section class="page" id="page-developers"></section>
+      <section class="page" id="page-settings"></section>
+    </div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

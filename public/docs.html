@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Reference — Pierson Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  .doc-wrap { max-width: 920px; margin: 0 auto; padding: 40px 24px 80px; }
+  .doc-nav { position: sticky; top:0; background: rgba(6,13,31,0.85); backdrop-filter: blur(8px); border-bottom:1px solid var(--line); padding:14px 0; z-index:10; }
+  pre { background: var(--navy2); border:1px solid var(--line); border-radius:12px; padding:18px; overflow:auto; font-size:13px; line-height:1.6; }
+  pre code { color: var(--off); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .endpoint { display:flex; align-items:center; gap:10px; margin: 28px 0 12px; }
+  .method { font-weight:700; font-size:12px; padding:3px 9px; border-radius:6px; font-family:var(--font-body); }
+  .method.get { background: rgba(74,222,128,0.14); color: var(--green-light); }
+  .method.post { background: rgba(37,99,235,0.16); color: var(--blue-light); }
+  .endpoint code { font-size: 15px; color:#fff; }
+  h2 { margin: 40px 0 8px; font-size: 28px; }
+  h3 { margin-top: 24px; }
+  table.params { width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; }
+  table.params td { padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.params td:first-child { color: var(--blue-light); font-family:ui-monospace,monospace; white-space:nowrap; }
+  .tok { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="doc-nav"><div class="container row-between"><a href="/" class="brand"><span class="brand-mark">P</span> Pierson<small>Pay</small></a><a href="/dashboard" class="btn btn-ghost btn-sm">Dashboard →</a></div></div>
+<div class="doc-wrap">
+  <h1 style="font-size:40px">API Reference</h1>
+  <p class="muted" style="font-size:17px">Charge cards, manage subscriptions, and create payment links over a simple REST API. All amounts are integer <strong>cents</strong>. Authenticate with your secret key as a Bearer token.</p>
+
+  <h2>Authentication</h2>
+  <p class="muted">Send your secret key (find it under <a href="/dashboard#developers">Developers</a>) in the Authorization header.</p>
+  <pre><code>Authorization: Bearer <span class="tok">sk_sandbox_xxx</span></code></pre>
+  <p class="muted small">Publishable keys (<code>pk_…</code>) may only make GET requests. Secret keys can move money — keep them private.</p>
+
+  <h2>Charges</h2>
+  <div class="endpoint"><span class="method post">POST</span><code>/v1/charges</code></div>
+  <table class="params">
+    <tr><td>amount</td><td>Integer, cents. Minimum 50.</td></tr>
+    <tr><td>currency</td><td>Defaults to <code>usd</code>.</td></tr>
+    <tr><td>description</td><td>Optional text.</td></tr>
+    <tr><td>customer_email</td><td>Optional receipt email.</td></tr>
+    <tr><td>card</td><td>Object: <code>number, exp_month, exp_year, cvc</code>.</td></tr>
+  </table>
+  <pre><code>curl http://localhost:4242/v1/charges \
+  -H "Authorization: Bearer <span class="tok">sk_sandbox_xxx</span>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 2500,
+    "description": "Order #1234",
+    "customer_email": "buyer@example.com",
+    "card": { "number": "4242424242424242", "exp_month": 12, "exp_year": 2030, "cvc": "123" }
+  }'</code></pre>
+
+  <div class="endpoint"><span class="method get">GET</span><code>/v1/charges</code> &nbsp;·&nbsp; <span class="method get">GET</span><code>/v1/charges/:id</code></div>
+  <p class="muted">List charges or retrieve one. Each charge includes a <code>fees</code> breakdown (merchant fee, processor cost, Pierson margin, net).</p>
+
+  <h2>Refunds</h2>
+  <div class="endpoint"><span class="method post">POST</span><code>/v1/refunds</code></div>
+  <table class="params">
+    <tr><td>charge</td><td>The charge id to refund.</td></tr>
+    <tr><td>amount</td><td>Optional partial amount in cents. Omit for a full refund.</td></tr>
+  </table>
+
+  <h2>Subscriptions</h2>
+  <div class="endpoint"><span class="method post">POST</span><code>/v1/subscriptions</code></div>
+  <table class="params">
+    <tr><td>amount</td><td>Per-cycle amount in cents.</td></tr>
+    <tr><td>interval</td><td><code>week</code>, <code>month</code>, or <code>year</code>.</td></tr>
+    <tr><td>product_name</td><td>Name shown to the customer.</td></tr>
+    <tr><td>card</td><td>Card object (first cycle is charged immediately).</td></tr>
+  </table>
+  <pre><code>curl http://localhost:4242/v1/subscriptions \
+  -H "Authorization: Bearer <span class="tok">sk_sandbox_xxx</span>" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 2900, "interval": "month", "product_name": "Gold Plan",
+        "card": { "number":"4242424242424242","exp_month":12,"exp_year":2030,"cvc":"123" } }'</code></pre>
+  <div class="endpoint"><span class="method post">POST</span><code>/v1/subscriptions/:id/cancel</code></div>
+
+  <h2>Payment Links</h2>
+  <div class="endpoint"><span class="method post">POST</span><code>/v1/payment_links</code></div>
+  <table class="params">
+    <tr><td>name</td><td>Link title.</td></tr>
+    <tr><td>mode</td><td><code>payment</code> (one-time) or <code>subscription</code>.</td></tr>
+    <tr><td>amount</td><td>Cents (omit with <code>allow_custom_amount</code>).</td></tr>
+    <tr><td>interval</td><td>For subscription mode.</td></tr>
+  </table>
+  <p class="muted">Returns a <code>url</code> you can share. Customers pay on a hosted checkout page.</p>
+
+  <h2>Balance &amp; Account</h2>
+  <div class="endpoint"><span class="method get">GET</span><code>/v1/balance</code> &nbsp;·&nbsp; <span class="method get">GET</span><code>/v1/account</code></div>
+
+  <h2 id="test-cards">Test cards</h2>
+  <table class="params">
+    <tr><td>4242 4242 4242 4242</td><td>Visa — approves</td></tr>
+    <tr><td>5555 5555 5555 4444</td><td>Mastercard — approves</td></tr>
+    <tr><td>3782 822463 10005</td><td>Amex — approves</td></tr>
+    <tr><td>4000 0000 0000 0002</td><td>Declined (generic)</td></tr>
+    <tr><td>4000 0000 0000 9995</td><td>Declined (insufficient funds)</td></tr>
+  </table>
+  <p class="muted small">Use any future expiry and any 3-digit CVC (4 for Amex).</p>
+</div>
+</body>
+</html>
