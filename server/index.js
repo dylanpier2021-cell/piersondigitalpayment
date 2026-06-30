@@ -32,7 +32,7 @@ const CSP = [
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com",
-  "font-src 'self' https://fonts.gstatic.com https://api.fontshare.com data:",
+  "font-src 'self' https://fonts.gstatic.com https://api.fontshare.com https://cdn.fontshare.com data:",
   "img-src 'self' data:",
   "connect-src 'self'",
 ].join('; ');
